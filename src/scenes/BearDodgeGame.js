@@ -1,50 +1,28 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import { AnchorProvider, Program } from "@project-serum/anchor";
-import { useWallet } from "@solana/wallet-adapter-react";
-import BN from "bn.js";
-import idl from "../idl.json";
 
-const BearDodgeGame = () => {
-  // Constants and initializations
-  const programId = new PublicKey(
-    "7o1egHUjWDxEF5YeEdfnBRTsUwtePF31drEU7xZhoZA9"
-  );
-  const connection = new Connection(clusterApiUrl("devnet"), "processed");
-  const wallet = useWallet();
-  const provider = new AnchorProvider(
-    connection,
-    wallet,
-    AnchorProvider.defaultOptions()
-  );
-  const program = new Program(idl, programId, provider);
-
-  // React states and refs
+function BearDodgeGame() {
   const canvasRef = useRef(null);
   const [cbEarned, setCbEarned] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [walletAddress, setWalletAddress] = useState(null);
 
   const balls = useRef([{ x: 50, y: 50, vx: 3, vy: 3 }]);
-  const bear = useRef({ x: 600, width: 120, height: 70 });
-  const keysPressed = useRef({});
+  const bear = useRef({ x: 600, width: 150, height: 70 }); // Increased size by 30%
+  const keysPressed = useRef({ ArrowLeft: false, ArrowRight: false }); // Correct initialization
   const bearImage = useRef(new Image());
 
   const canvasWidth = 1200;
   const canvasHeight = 720;
 
-  // Load bear image
   const loadBearImage = () => {
-    bearImage.current.src = "/bear.png";
+    bearImage.current.src = "/bear.png"; // Path to your bear image
   };
 
-  // Update game logic
-  const updateGame = async () => {
+  const updateGame = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Handle bear movement
+    // Update Bear position based on keys pressed (Horizontal movement only)
     const speed = 5;
     if (keysPressed.current["ArrowLeft"] && bear.current.x > 0) {
       bear.current.x -= speed;
@@ -56,44 +34,48 @@ const BearDodgeGame = () => {
       bear.current.x += speed;
     }
 
-    // Draw bear
+    // Draw Bear Image with the increased size
     ctx.drawImage(
       bearImage.current,
       bear.current.x,
-      canvas.height / 2 - bear.current.height / 2,
+      canvas.height / 2 - bear.current.height / 2, // Vertical center
       bear.current.width,
       bear.current.height
     );
 
-    // Update balls
+    // Update and Draw Balls
     balls.current.forEach((ball) => {
       ball.x += ball.vx;
       ball.y += ball.vy;
 
+      // Bounce balls off walls
       if (ball.x <= 0 || ball.x >= canvas.width) ball.vx *= -1;
       if (ball.y <= 0 || ball.y >= canvas.height) ball.vy *= -1;
 
-      // Draw ball
+      // Draw ball with 3D effect
       ctx.beginPath();
+
+      // Create a radial gradient for 3D shading
       const gradient = ctx.createRadialGradient(
-        ball.x - 4,
-        ball.y - 4,
-        1,
+        ball.x - 4, // Offset for highlight
+        ball.y - 4, // Offset for highlight
+        1, // Inner radius (small highlight area)
         ball.x,
         ball.y,
-        15
+        15 // Outer radius (entire ball)
       );
-      gradient.addColorStop(0, "white");
-      gradient.addColorStop(0.2, "lightblue");
-      gradient.addColorStop(0.8, "blue");
-      gradient.addColorStop(1, "darkblue");
+
+      gradient.addColorStop(0, "white"); // Bright highlight
+      gradient.addColorStop(0.2, "lightblue"); // Mid-tone
+      gradient.addColorStop(0.8, "blue"); // Base color
+      gradient.addColorStop(1, "darkblue"); // Shadow
 
       ctx.fillStyle = gradient;
       ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2);
       ctx.fill();
       ctx.closePath();
 
-      // Check collision
+      // Check for collision with Bear
       if (
         ball.x > bear.current.x &&
         ball.x < bear.current.x + bear.current.width &&
@@ -104,39 +86,43 @@ const BearDodgeGame = () => {
       }
     });
 
-    // Update CB earned
+    // Update cbEarned
     setCbEarned((prev) => prev + 1);
+  };
 
-    if (cbEarned % 60 === 0) {
-      await earnCb();
+  const handleMouseMove = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+
+    // Update bear position based on mouse movement (Horizontal only)
+    bear.current.x = Math.max(
+      0,
+      Math.min(
+        mouseX - bear.current.width / 2,
+        canvas.width - bear.current.width
+      )
+    );
+  };
+
+  const handleKeyDown = (e) => {
+    // Only set valid keys and prevent default behavior
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault(); // Prevent browser scrolling
+      keysPressed.current[e.key] = true;
     }
   };
 
-  // Earn CB function
-  const earnCb = async () => {
-    if (!walletAddress) return;
-
-    try {
-      const [sessionDataPda] = await PublicKey.findProgramAddress(
-        [Buffer.from("session"), new PublicKey(walletAddress).toBuffer()],
-        programId
-      );
-      await program.methods
-        .earnCb(new BN(1))
-        .accounts({
-          sessionData: sessionDataPda,
-          player: walletAddress,
-        })
-        .rpc();
-      console.log("CB Earned on-chain!");
-    } catch (err) {
-      console.error("Error earning CB:", err);
+  const handleKeyUp = (e) => {
+    // Clear the relevant key state
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault(); // Prevent browser scrolling
+      keysPressed.current[e.key] = false;
     }
   };
 
-  // Game loop setup
   useEffect(() => {
-    loadBearImage();
+    loadBearImage(); // Load the bear image
 
     if (!gameOver) {
       const canvas = canvasRef.current;
@@ -145,6 +131,12 @@ const BearDodgeGame = () => {
 
       const gameLoop = setInterval(updateGame, 16);
 
+      // Add event listeners for movement
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+      canvas.addEventListener("mousemove", handleMouseMove);
+
+      // Add new balls every 10 seconds
       const addBallInterval = setInterval(() => {
         balls.current.push({
           x: Math.random() * canvasWidth,
@@ -152,11 +144,14 @@ const BearDodgeGame = () => {
           vx: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
           vy: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
         });
-      }, 10000);
+      }, 10000); // Updated to 10 seconds
 
       return () => {
         clearInterval(gameLoop);
         clearInterval(addBallInterval);
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+        canvas.removeEventListener("mousemove", handleMouseMove);
       };
     }
   }, [gameOver]);
@@ -166,12 +161,12 @@ const BearDodgeGame = () => {
       {gameOver ? (
         <div className="game-over">
           <h2>Game Over</h2>
-          <p>CB Earned: {Math.floor(cbEarned / 60)}</p>
+          <p>Cb earned: {Math.floor(cbEarned / 60)}</p>
           <button
             onClick={() => {
               setGameOver(false);
               setCbEarned(0);
-              balls.current = [{ x: 50, y: 50, vx: 3, vy: 3 }];
+              balls.current = [{ x: 50, y: 50, vx: 3, vy: 3 }]; // Reset balls
             }}
           >
             Restart
@@ -179,12 +174,12 @@ const BearDodgeGame = () => {
         </div>
       ) : (
         <div>
-          <p>CB Earned: {Math.floor(cbEarned / 60)}</p>
+          <p>Cb earned: {Math.floor(cbEarned / 60)}</p>
           <canvas ref={canvasRef} className="game-canvas"></canvas>
         </div>
       )}
     </div>
   );
-};
+}
 
 export default BearDodgeGame;

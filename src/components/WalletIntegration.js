@@ -33,7 +33,7 @@ function WalletIntegration({ onConnect }) {
   };
 
   return (
-    <ConnectionProvider endpoint="https://api.mainnet-beta.solana.com">
+    <ConnectionProvider endpoint="https://api.devnet.solana.com">
       <WalletProvider wallets={wallets}>
         {/* Removed autoConnect */}
         <WalletModalProvider>
