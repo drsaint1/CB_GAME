@@ -1,61 +1,20 @@
 import React, { useRef, useEffect, useState } from "react";
+import axios from "axios";
+// import '../style/games.css';
 
-
-function BearDodgeGame() {
-    // const canvasRef = useRef(null);
-    // const [cbEarned, setCbEarned] = useState(0);
-    // const [gameOver, setGameOver] = useState(false);
-
-    // const balls = useRef([{ x: 50, y: 50, vx: 3, vy: 3 }]);
-    // const bear = useRef({ x: 600, width: 150, height: 70 }); // Increased size by 30%
-    // const keysPressed = useRef({ ArrowLeft: false, ArrowRight: false }); // Correct initialization
-    // const bearImage = useRef(new Image());
-
-    // const canvasWidth = 1200;
-    // const canvasHeight = 720;
-
-    // const loadBearImage = () => {
-    //     bearImage.current.src = "/bear.png"; // Path to your bear image
-    //     bearImage.current.onload = () => {
-    //         startGame(); // Start the game loop only after the image is loaded
-    //     };
-    // };
-
-    // const startGame = () => {
-    //     if (!gameOver) {
-    //         const canvas = canvasRef.current;
-    //         canvas.width = canvasWidth;
-    //         canvas.height = canvasHeight;
-
-    //         const gameLoop = setInterval(updateGame, 16);
-
-    //         // Add event listeners for movement
-    //         window.addEventListener("keydown", handleKeyDown);
-    //         window.addEventListener("keyup", handleKeyUp);
-    //         canvas.addEventListener("mousemove", handleMouseMove);
-
-    //         // Add new balls every 10 seconds
-    //         const addBallInterval = setInterval(() => {
-    //             balls.current.push({
-    //                 x: Math.random() * canvasWidth,
-    //                 y: Math.random() * canvasHeight,
-    //                 vx: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
-    //                 vy: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
-    //             });
-    //         }, 10000);
-
-    //         return () => {
-    //             clearInterval(gameLoop);
-    //             clearInterval(addBallInterval);
-    //             window.removeEventListener("keydown", handleKeyDown);
-    //             window.removeEventListener("keyup", handleKeyUp);
-    //             canvas.removeEventListener("mousemove", handleMouseMove);
-    //         };
-    //     }
-    // };
+function BearDodgeGame({ walletAddress }) {
+   
     const canvasRef = useRef(null);
     const [cbEarned, setCbEarned] = useState(0);
     const [gameOver, setGameOver] = useState(false);
+    const [lastSavedPoints, setLastSavedPoints] = useState(0);
+    const [countdown, setCountdown] = useState(0); // New countdown state
+    // const [walletAddress, setWalletAddress] = useState(null);
+
+    // useEffect(() => {
+    //     const address = localStorage.getItem("walletAddress");
+    //     setWalletAddress(address);
+    //   }, []);
 
     const balls = useRef([{ x: 50, y: 50, vx: 3, vy: 3 }]);
     const bear = useRef({ x: 600, width: 150, height: 70 }); // Increased size by 30%
@@ -94,12 +53,6 @@ function BearDodgeGame() {
 
         // Add new balls every 10 seconds
         const addBallInterval = setInterval(() => {
-            // balls.current.push({
-            //     x: Math.random() * canvasWidth,
-            //     y: Math.random() * canvasHeight,
-            //     vx: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
-            //     vy: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
-            // });
             if (balls.current.length < 4) { // Limit maximum number of balls
                 balls.current.push({
                     x: Math.random() * canvasWidth,
@@ -108,7 +61,7 @@ function BearDodgeGame() {
                     vy: (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2),
                 });
             }
-        }, 20000);
+        }, 200000);
 
         return () => {
             clearInterval(gameLoop);
@@ -129,7 +82,8 @@ function BearDodgeGame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Update Bear position based on keys pressed (Horizontal movement only)
-        const speed = 5;
+        // const speed = 5;
+        const speed = 2;
         if (keysPressed.current["ArrowLeft"] && bear.current.x > 0) {
             bear.current.x -= speed;
         }
@@ -221,6 +175,57 @@ function BearDodgeGame() {
         }
     };
 
+    const handleSavePoints = async (points) => {
+        try {
+            // const walletAddress = "user-wallet-address"; // Replace with dynamic wallet address
+            const response = await axios.post("http://127.0.0.1:8000/api/save-points", {
+                wallet_address: walletAddress,
+                points,
+            });
+            console.log("Points saved successfully:", response.data);
+        } catch (error) {
+            console.error("Error saving points:", error);
+        }
+    };
+
+    //  const handleContinue = () => {
+    //     let timer = 5; // 5-second countdown
+    //     setCountdown(timer);
+
+    //     const countdownInterval = setInterval(() => {
+    //         timer -= 1;
+    //         setCountdown(timer);
+
+    //         if (timer === 0) {
+    //             clearInterval(countdownInterval);
+    //             setCountdown(0);
+    //             setGameOver(false); // Resume game
+    //         }
+    //     }, 1000);
+    // };
+
+    // const handleRestart = () => {
+    //     setGameOver(false);
+    //     setCbEarned(0); // Reset points
+    //     balls.current = [{ x: 50, y: 50, vx: 3, vy: 3 }]; // Reset balls
+    // };
+
+    const handleContinue = async () => {
+        const newPoints = Math.floor(cbEarned / 60) - lastSavedPoints; // Calculate additional points earned
+        setLastSavedPoints((prev) => prev + newPoints); // Update last saved points
+        await handleSavePoints(newPoints); // Save additional points
+        setGameOver(false);
+    };
+
+    const handleRestart = async () => {
+        const totalPoints = Math.floor(cbEarned / 60); // Get total earned points
+        await handleSavePoints(totalPoints); // Save all points
+        setCbEarned(0); // Reset points
+        setLastSavedPoints(0); // Reset last saved points
+        setGameOver(false);
+        balls.current = [{ x: 50, y: 50, vx: 3, vy: 3 }]; // Reset balls
+    };
+
     useEffect(() => {
         loadBearImage();
     }, []);
@@ -234,21 +239,20 @@ function BearDodgeGame() {
         }
     }, [gameOver]);
 
-    const handleContinue = () => {
-        setGameOver(false); // Continue the game without resetting points
-    };
-
-    const handleRestart = () => {
-        setGameOver(false);
-        setCbEarned(0); // Reset points
-        balls.current = [{ x: 50, y: 50, vx: 3, vy: 3 }]; // Reset balls
-    };
+  
+  
     
 
     
     return (
         <div>
-            {gameOver ? (
+             {
+            //  countdown > 0 ? (
+            //     <div className="countdown">
+            //         <h1>Game will continue in {countdown}...</h1>
+            //     </div>
+            // ) :
+             gameOver ? (
                 <div className="fixed inset-0 z-40 min-h-full overflow-y-auto overflow-x-hidden transition flex items-center">
                     {/* <!-- overlay --> */}
                     <div aria-hidden="true" className="fixed inset-0 w-full h-full bg-black/50 cursor-pointer">
@@ -287,7 +291,7 @@ function BearDodgeGame() {
                                             onClick={handleContinue}
                                             className="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm text-white shadow focus:ring-white border-transparent bg-red-600 hover:bg-red-500 focus:bg-red-700 focus:ring-offset-red-700">
                                             <span className="flex items-center gap-1">
-                                                <span>Continue</span>
+                                                <span>Pay 100CB to Continue</span>
                                             </span>
                                         </button>
                                     </div>

@@ -39,7 +39,12 @@ function WalletIntegration({ onConnect }) {
       });
       const { exists, user } = response.data;
 
+      // Save wallet address and expiration time to localStorage
+      const expirationTime = new Date().getTime() + 20 * 24 * 60 * 60 * 1000; // 20 days
+      localStorage.setItem("walletData", JSON.stringify({ walletAddress: address, expiresAt: expirationTime }));
+
       if (exists) {
+        // localStorage.setItem("walletAddress", address); // Save wallet address in localStorage
         // Wallet exists, fetch user data
         onConnect(user);
       } else {
@@ -51,6 +56,23 @@ function WalletIntegration({ onConnect }) {
       console.error("Error connecting wallet:", error);
     }
   };
+
+   // Check localStorage on mount
+   useEffect(() => {
+    const walletData = JSON.parse(localStorage.getItem("walletData"));
+    if (walletData) {
+      const { walletAddress, expiresAt } = walletData;
+      const currentTime = new Date().getTime();
+
+      if (currentTime < expiresAt) {
+        // Wallet is still valid
+        handleWalletConnection(walletAddress);
+      } else {
+        // Wallet expired, clear localStorage
+        localStorage.removeItem("walletData");
+      }
+    }
+  }, []);
 
   const handleUsernameSubmit = async () => {
     try {

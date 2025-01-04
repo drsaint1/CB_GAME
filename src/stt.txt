@@ -1,0 +1,25 @@
+ // useEffect(() => {
+  //   fetch("/api/leaderboard")
+  //     .then((response) => response.json())
+  //     .then((data) => setLeaderboard(data));
+  // }, []);
+
+  // fetch("/api/save-user", {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" },
+  //   body: JSON.stringify({
+  //     wallet: publicKey.toString(),
+  //     username,
+  //     referral: referralCode, // Optional referral code
+  //   }),
+  // });
+
+  // useEffect(() => {
+  //   fetch("/api/user-dashboard", {
+  //     headers: {
+  //       Authorization: `Bearer ${token}`, // Use your auth token
+  //     },
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => setUserDashboard(data));
+  // }, []);
