@@ -6,6 +6,7 @@ import './App.css';
 function App() {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   const backgroundStyle = {
     position: "relative",
@@ -37,7 +38,13 @@ function App() {
         <BearDodgeGame />
       )}
       <div style={{ position: "absolute", top: "10px", right: "20px", zIndex: 1000, }} >
-        <WalletIntegration onConnect={() => setIsWalletConnected(true)} />
+        {/* <WalletIntegration onConnect={() => setIsWalletConnected(true)} /> */}
+        <WalletIntegration
+          onConnect={(user) => {
+            setIsWalletConnected(true);
+            setUserData(user);
+          }}
+        />
       </div>
     </div>
   );
