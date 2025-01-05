@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 
 function BearDodgeGame() {
   const canvasRef = useRef(null);
@@ -19,7 +19,8 @@ function BearDodgeGame() {
   const [canvasWidth, setCanvasWidth] = useState(baseCanvasWidth);
   const [canvasHeight, setCanvasHeight] = useState(baseCanvasHeight);
 
-  const loadAssets = () => {
+  // Load assets
+  const loadAssets = useCallback(() => {
     bearImage.current.src = "/bear.png";
     backgroundImage.current.src = "/background.png";
     canvasBackgroundImage.current.src = "/canvas-background.jpg";
@@ -32,9 +33,10 @@ function BearDodgeGame() {
     if (!collisionSound.current) {
       collisionSound.current = new Audio("/collision.mp3");
     }
-  };
+  }, []);
 
-  const resizeGame = () => {
+  // Resize game for responsiveness
+  const resizeGame = useCallback(() => {
     const scaleFactor = Math.min(
       window.innerWidth / baseCanvasWidth,
       window.innerHeight / baseCanvasHeight
@@ -42,28 +44,30 @@ function BearDodgeGame() {
     setCanvasWidth(baseCanvasWidth * scaleFactor);
     setCanvasHeight(baseCanvasHeight * scaleFactor);
 
-    // Adjust bear and ball size
+    // Adjust sizes of bear and balls
     bear.current.width = 150 * scaleFactor;
     bear.current.height = 70 * scaleFactor;
     balls.current.forEach((ball) => {
       ball.radius = 10 * scaleFactor;
     });
 
-    // Adjust the canvas container padding to center the canvas
+    // Center canvas
     const canvasContainer = document.getElementById("canvas-container");
     if (canvasContainer) {
-      const leftPadding = (window.innerWidth - canvasWidth) / 2;
+      const leftPadding =
+        (window.innerWidth - baseCanvasWidth * scaleFactor) / 2;
       canvasContainer.style.paddingLeft = `${leftPadding}px`;
       canvasContainer.style.paddingRight = `${leftPadding}px`;
     }
-  };
+  }, [baseCanvasWidth, baseCanvasHeight]);
 
-  const updateGame = () => {
+  // Game logic and rendering
+  const updateGame = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Canvas Background
+    // Draw canvas background
     if (
       canvasBackgroundImage.current.complete &&
       canvasBackgroundImage.current.naturalWidth > 0
@@ -77,7 +81,7 @@ function BearDodgeGame() {
       );
     }
 
-    // Update Bear position based on keys or touch
+    // Update Bear position
     const speed = 5 * (canvasWidth / baseCanvasWidth);
     if (keysPressed.current["ArrowLeft"] && bear.current.x > 0) {
       bear.current.x -= speed;
@@ -100,7 +104,7 @@ function BearDodgeGame() {
       );
     }
 
-    // Update and Draw Balls with the requested gradient
+    // Update and draw balls
     balls.current.forEach((ball) => {
       ball.x += ball.vx;
       ball.y += ball.vy;
@@ -109,23 +113,20 @@ function BearDodgeGame() {
       if (ball.x <= 0 || ball.x >= canvas.width) ball.vx *= -1;
       if (ball.y <= 0 || ball.y >= canvas.height) ball.vy *= -1;
 
-      // Calculate gradient based on screen size
+      // Draw ball with gradient
       const gradient = ctx.createRadialGradient(
         ball.x,
         ball.y,
-        0, // Inner radius
+        0,
         ball.x,
         ball.y,
-        ball.radius // Outer radius
+        ball.radius
       );
-
-      // Explicit gradient stops that don't scale based on the ball's radius
       gradient.addColorStop(0, "white");
       gradient.addColorStop(0.2, "lightblue");
       gradient.addColorStop(0.8, "blue");
       gradient.addColorStop(1, "darkblue");
 
-      // Apply the gradient
       ctx.beginPath();
       ctx.fillStyle = gradient;
       ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
@@ -144,11 +145,25 @@ function BearDodgeGame() {
       }
     });
 
-    // Update score
     setCbEarned((prev) => prev + 1);
-  };
+  }, [canvasWidth, canvasHeight]);
 
-  const handleMouseMove = (e) => {
+  // Event handlers
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      keysPressed.current[e.key] = true;
+    }
+  }, []);
+
+  const handleKeyUp = useCallback((e) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      keysPressed.current[e.key] = false;
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -160,9 +175,9 @@ function BearDodgeGame() {
         canvas.width - bear.current.width
       )
     );
-  };
+  }, []);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const touchX = e.touches[0].clientX - rect.left;
@@ -174,21 +189,7 @@ function BearDodgeGame() {
         canvas.width - bear.current.width
       )
     );
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-      e.preventDefault();
-      keysPressed.current[e.key] = true;
-    }
-  };
-
-  const handleKeyUp = (e) => {
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-      e.preventDefault();
-      keysPressed.current[e.key] = false;
-    }
-  };
+  }, []);
 
   useEffect(() => {
     loadAssets();
@@ -208,7 +209,6 @@ function BearDodgeGame() {
 
       const gameLoop = setInterval(updateGame, 16);
 
-      // Add event listeners
       window.addEventListener("keydown", handleKeyDown);
       window.addEventListener("keyup", handleKeyUp);
       canvas.addEventListener("mousemove", handleMouseMove);
@@ -227,14 +227,25 @@ function BearDodgeGame() {
       return () => {
         clearInterval(gameLoop);
         clearInterval(addBallInterval);
+        window.removeEventListener("resize", resizeGame);
         window.removeEventListener("keydown", handleKeyDown);
         window.removeEventListener("keyup", handleKeyUp);
         canvas.removeEventListener("mousemove", handleMouseMove);
         canvas.removeEventListener("touchmove", handleTouchMove);
-        window.removeEventListener("resize", resizeGame);
       };
     }
-  }, [gameOver, canvasWidth, canvasHeight]);
+  }, [
+    loadAssets,
+    resizeGame,
+    updateGame,
+    handleKeyDown,
+    handleKeyUp,
+    handleMouseMove,
+    handleTouchMove,
+    gameOver,
+    canvasWidth,
+    canvasHeight,
+  ]);
 
   return (
     <div style={{ backgroundImage: `url(${backgroundImage.current.src})` }}>
