@@ -21,7 +21,8 @@ const AppContext = createContext();
   useEffect(() => {
 
     
-    const jwtToken = Cookies.get('jwtToken');
+    // const jwtToken = Cookies.get('jwtToken');
+    const jwtToken= "55";
     // Fetch unread notifications count
     const fetchUnreadNotifications = async () => {
         try {

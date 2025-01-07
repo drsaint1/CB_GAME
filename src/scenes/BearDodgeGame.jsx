@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
-// import '../style/games.css';
+import '../style/games.css';
 
 function BearDodgeGame({ walletAddress }) {
    
