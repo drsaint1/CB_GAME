@@ -268,8 +268,8 @@ function GamePlay() {
 
   const backgroundStyle = {
     position: "relative",
-    height: "100vh",
-    width: "100vw",
+    height: "80vh",
+    width: "100%",
     overflow: "hidden",
     backgroundImage: "url('../assets/background.jpg')", // Adjust path as needed
     backgroundSize: "cover",
@@ -286,18 +286,6 @@ function GamePlay() {
 
   return (
     <>
-
-      {/* <Header
-        isWalletConnected={isWalletConnected}
-        onConnect={(user) => {
-          setIsWalletConnected(true);
-          setUserData(user);
-        }}
-        userData={userData}
-        onGameStart={startGame}
-      /> */}
-
-
       <div style={backgroundStyle} className="font-montserrat">
         {!gameStarted ? (
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "100%", color: "white", }} >
@@ -317,18 +305,14 @@ function GamePlay() {
             walletAddress={userData?.wallet_address}
           />
         )}
-        <div style={{ position: "absolute", top: "10px", right: "20px", zIndex: 1000, }} >
-
-        {/* <div  className="mt-5 px-5 py-2.5 text-lg bg-red-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 cursor-pointer"> */}
-
-          {/* <WalletIntegration onConnect={() => setIsWalletConnected(true)} /> */}
+        {/* <div style={{ position: "absolute", top: "10px", right: "20px", zIndex: 1000, }} >
           <WalletIntegration
             onConnect={(user) => {
               setIsWalletConnected(true);
               setUserData(user);
             }}
           />
-        </div>
+        </div> */}
       </div>
     </>
   );

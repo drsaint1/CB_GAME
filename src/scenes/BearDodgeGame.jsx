@@ -255,13 +255,13 @@ function BearDodgeGame({ walletAddress }) {
              gameOver ? (
                 <div className="fixed inset-0 z-40 min-h-full overflow-y-auto overflow-x-hidden transition flex items-center">
                     {/* <!-- overlay --> */}
-                    <div aria-hidden="true" className="fixed inset-0 w-full h-full bg-black/50 cursor-pointer">
+                    <div aria-hidden="true" className="fixed inset-0 w-full  h-full bg-black/50 cursor-pointer">
                     </div>
 
                     {/* <!-- Modal --> */}
                     <div className="relative w-full cursor-pointer pointer-events-none transition my-auto p-4">
                         <div
-                            className="w-full py-2 bg-white cursor-default pointer-events-auto dark:bg-gray-800 relative rounded-xl mx-auto max-w-sm">
+                            className="w-full py-2 bg-white cursor-default pointer-events-auto dark:bg-gray-800 relative rounded-xl mx-auto max-w-lg">
                             <div className="space-y-2 p-2">
                                 <div className="p-4 space-y-2 text-center dark:text-white">
                                     <h2 className="text-xl font-bold tracking-tight" id="page-action.heading"> Game Over </h2>
@@ -279,7 +279,7 @@ function BearDodgeGame({ walletAddress }) {
                                             type="button"
                                           
                                             onClick={handleRestart}
-                                            className="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm text-gray-800 bg-white border-gray-300 hover:bg-gray-50 focus:ring-primary-600 focus:text-primary-600 focus:bg-primary-50 focus:border-primary-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200 dark:focus:text-primary-400 dark:focus:border-primary-400 dark:focus:bg-gray-800">
+                                            className="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm text-gray-800 bg-gray border-gray-300 hover:bg-gray-50 focus:ring-primary-600 focus:text-primary-600 focus:bg-primary-50 focus:border-primary-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200 dark:focus:text-primary-400 dark:focus:border-primary-400 dark:focus:bg-gray-800">
                                             <span className="flex items-center gap-1">
                                                 <span>Restart</span>
                                             </span>
@@ -303,10 +303,16 @@ function BearDodgeGame({ walletAddress }) {
                     </div>
                 </div>
             ) : (
-                <div>
-                    <p>Cb earned: {Math.floor(cbEarned / 60)}</p>
-                    <canvas ref={canvasRef} className="game-canvas"></canvas>
+                <div className="flex flex-col items-center justify-center space-y-4 p-4">
+                <p className="text-xl font-semibold text-gray-800">Cb earned: {Math.floor(cbEarned / 60)}</p>
+                <div className="relative w-full max-w-4xl bg-gray-100 border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden aspect-w-16 aspect-h-9">
+                  <canvas
+                    ref={canvasRef}
+                    className="w-full h-full object-cover"
+                  ></canvas>
                 </div>
+              </div>
+              
             )}
         </div>
     );

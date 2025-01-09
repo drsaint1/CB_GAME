@@ -1,4 +1,5 @@
-import React, { useMemo, useEffect,useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 import { ConnectionProvider, WalletProvider, useWallet, } from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter, SolflareWalletAdapter, } from "@solana/wallet-adapter-wallets";
@@ -7,16 +8,13 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import axios from "axios";
 
 function WalletIntegration({ onConnect }) {
-  const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
-    []
-  );
+  const wallets = useMemo( () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], [] );
 
   const [usernameModal, setUsernameModal] = useState(false);
   const [username, setUsername] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [isConnected, setIsConnected] = useState(false); // Prevent infinite requests
-
+  const navigate = useNavigate(); // Initialize navigate
 
 
   const WalletConnectionChecker = () => {
@@ -47,6 +45,7 @@ function WalletIntegration({ onConnect }) {
         // localStorage.setItem("walletAddress", address); // Save wallet address in localStorage
         // Wallet exists, fetch user data
         onConnect(user);
+        navigate("/play");
       } else {
         // Wallet is new, show username modal
         setWalletAddress(address);
@@ -57,8 +56,8 @@ function WalletIntegration({ onConnect }) {
     }
   };
 
-   // Check localStorage on mount
-   useEffect(() => {
+  // Check localStorage on mount
+  useEffect(() => {
     const walletData = JSON.parse(localStorage.getItem("walletData"));
     if (walletData) {
       const { walletAddress, expiresAt } = walletData;
@@ -83,6 +82,7 @@ function WalletIntegration({ onConnect }) {
 
       setUsernameModal(false);
       onConnect(response.data.user);
+      navigate("/play");
     } catch (error) {
       console.error("Error setting username:", error);
     }
@@ -110,8 +110,8 @@ function WalletIntegration({ onConnect }) {
           <WalletMultiButton />
           <WalletConnectionChecker />
 
-            {/* Username Modal */}
-            {usernameModal && (
+          {/* Username Modal */}
+          {usernameModal && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div className=" max-w-md p-6 bg-white rounded-lg shadow-lg">
                 <h2 className="mb-4 text-xl font-semibold text-gray-800"> Set Your Username </h2>
