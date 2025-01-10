@@ -3,7 +3,7 @@ import axios from "axios";
 import '../style/games.css';
 
 function BearDodgeGame({ walletAddress }) {
-   
+
     const canvasRef = useRef(null);
     const [cbEarned, setCbEarned] = useState(0);
     const [gameOver, setGameOver] = useState(false);
@@ -239,82 +239,101 @@ function BearDodgeGame({ walletAddress }) {
         }
     }, [gameOver]);
 
-  
-  
-    
 
-    
+    const handlePurchaseShield = () => {
+        alert("Shield purchased!");
+    };
+
+    const handleWithdrawTokens = () => {
+        alert("Tokens withdrawn!");
+    };
+
+
+
+
     return (
         <div>
-             {
-            //  countdown > 0 ? (
-            //     <div className="countdown">
-            //         <h1>Game will continue in {countdown}...</h1>
-            //     </div>
-            // ) :
-             gameOver ? (
-                <div className="fixed inset-0 z-40 min-h-full overflow-y-auto overflow-x-hidden transition flex items-center">
-                    {/* <!-- overlay --> */}
-                    <div aria-hidden="true" className="fixed inset-0 w-full  h-full bg-black/50 cursor-pointer">
-                    </div>
+            {
+                //  countdown > 0 ? (
+                //     <div className="countdown">
+                //         <h1>Game will continue in {countdown}...</h1>
+                //     </div>
+                // ) :
+                gameOver ? (
+                    <div className="fixed inset-0 z-40 min-h-full overflow-y-auto overflow-x-hidden transition flex items-center">
+                        {/* <!-- overlay --> */}
+                        <div aria-hidden="true" className="fixed inset-0 w-full  h-full bg-black/50 cursor-pointer">
+                        </div>
 
-                    {/* <!-- Modal --> */}
-                    <div className="relative w-full cursor-pointer pointer-events-none transition my-auto p-4">
-                        <div
-                            className="w-full py-2 bg-white cursor-default pointer-events-auto dark:bg-gray-800 relative rounded-xl mx-auto max-w-lg">
-                            <div className="space-y-2 p-2">
-                                <div className="p-4 space-y-2 text-center dark:text-white">
-                                    <h2 className="text-xl font-bold tracking-tight" id="page-action.heading"> Game Over </h2>
-                                    <p className="text-gray-500"> Do you want to continue or restart this game </p>
-                                    <p className="font-medium">Cb earned: {Math.floor(cbEarned / 60)}</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div aria-hidden="true" className="border-t dark:border-gray-700 px-2"></div>
-
-                                <div className="px-6 py-2">
-                                    <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(0,1fr))]">
-                                        <button
-                                            type="button"
-                                          
-                                            onClick={handleRestart}
-                                            className="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm text-gray-800 bg-gray border-gray-300 hover:bg-gray-50 focus:ring-primary-600 focus:text-primary-600 focus:bg-primary-50 focus:border-primary-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200 dark:focus:text-primary-400 dark:focus:border-primary-400 dark:focus:bg-gray-800">
-                                            <span className="flex items-center gap-1">
-                                                <span>Restart</span>
-                                            </span>
-                                        </button>
-
-                                        {/* Continue Button */}
-                                        <button
-                                            type="submit"
-                                            onClick={handleContinue}
-                                            className="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm text-white shadow focus:ring-white border-transparent bg-red-600 hover:bg-red-500 focus:bg-red-700 focus:ring-offset-red-700">
-                                            <span className="flex items-center gap-1">
-                                                <span>Pay 100CB to Continue</span>
-                                            </span>
-                                        </button>
+                        {/* <!-- Modal --> */}
+                        <div className="relative w-full cursor-pointer pointer-events-none transition my-auto p-4">
+                            <div
+                                className="w-full py-2 bg-white cursor-default pointer-events-auto dark:bg-gray-800 relative rounded-xl mx-auto max-w-lg">
+                                <div className="space-y-2 p-2">
+                                    <div className="p-4 space-y-2 text-center dark:text-white">
+                                        <h2 className="text-xl font-bold tracking-tight" id="page-action.heading"> Game Over </h2>
+                                        <p className="text-gray-500"> Do you want to continue or restart this game </p>
+                                        <p className="font-medium">Cb earned: {Math.floor(cbEarned / 60)}</p>
                                     </div>
                                 </div>
+
+                                <div className="space-y-2">
+                                    <div aria-hidden="true" className="border-t dark:border-gray-700 px-2"></div>
+
+                                    <div className="px-6 py-2">
+                                        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(0,1fr))]">
+                                            <button
+                                                type="button"
+                                                onClick={handleRestart}
+                                                className="inline-flex items-center justify-center py-1 gap-1 bg-red-600 hover:bg-red-500 text-white  font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm  bg-gray border-gray-300 hover:bg-gray-50 focus:ring-primary-600 focus:text-primary-600 focus:bg-primary-50 focus:border-primary-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200 dark:focus:text-primary-400 dark:focus:border-primary-400 dark:focus:bg-gray-800">
+                                                <span className="flex items-center gap-1">
+                                                    <span>Restart</span>
+                                                </span>
+                                            </button>
+
+                                            {/* Continue Button */}
+                                            <button
+                                                type="submit"
+                                                onClick={handleContinue}
+                                                className="inline-flex items-center justify-center py-1 gap-1 font-medium rounded-lg border transition-colors outline-none focus:ring-offset-2 focus:ring-2 focus:ring-inset dark:focus:ring-offset-0 min-h-[2.25rem] px-4 text-sm text-white shadow focus:ring-white border-transparent bg-yellow-600 hover:bg-yellow-500 focus:bg-red-700 focus:ring-offset-red-700">
+                                                <span className="flex items-center gap-1">
+                                                    <span>Pay 100CB to Continue</span>
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+
                             </div>
-
-
                         </div>
                     </div>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center justify-center space-y-4 p-4">
-                <p className="text-xl font-semibold text-gray-800">Cb earned: {Math.floor(cbEarned / 60)}</p>
-                <div className="relative w-full max-w-4xl bg-gray-100 border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden aspect-w-16 aspect-h-9">
-                  <canvas
-                    ref={canvasRef}
-                    className="w-full h-full object-cover"
-                  ></canvas>
-                </div>
-              </div>
-              
-            )}
+                ) : (
+                    <div className="flex flex-col items-center justify-center space-y-4 p-4 bg-gray-900  h-screen text-white">
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handlePurchaseShield}
+                                className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg shadow-md transition"
+                            >
+                                Purchase Shield
+                            </button>
+                            <button
+                                onClick={handleWithdrawTokens}
+                                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg shadow-md transition"
+                            >
+                                Withdraw Tokens
+                            </button>
+                        </div>
+                        <p className="text-3xl font-semibold text-gray-800">Cb earned: {Math.floor(cbEarned / 60)}</p>
+                        <div className="relative w-full max-w-4xl bg-gray-100 border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden aspect-w-16 aspect-h-9">
+                            <canvas ref={canvasRef} className="w-full h-full object-cover" ></canvas>
+                        </div>
+                    </div>
+
+
+                )}
         </div>
+
     );
 }
 

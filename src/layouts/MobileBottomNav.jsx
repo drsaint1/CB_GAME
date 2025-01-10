@@ -12,29 +12,29 @@ const MobileBottomNav = () => {
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 bg-white shadow-lg border-t border-stroke lg:hidden dark:bg-black dark:border-black dark:drop-shadow-none ">
       <div className="flex justify-around items-center h-16 font-medium text-gray">
-        <Link to="/" className="flex flex-col items-center">
+        <Link to="/Play" className="flex flex-col items-center">
           <BiConversation size={24} className="text-black dark:text-[#ccc]" />
-          <span className="text-sm text-black dark:text-[#ccc]">Chats</span>
+          <span className="text-sm text-black dark:text-[#ccc]">Play Game</span>
         </Link>
-        <Link to="/" className="flex flex-col items-center">
+        <Link to="/leaderboard" className="flex flex-col items-center">
           <BiExtension size={24} className="text-black dark:text-[#ccc]" />
-          <span className="text-sm text-black dark:text-[#ccc]">Install Widget</span>
+          <span className="text-sm text-black dark:text-[#ccc]">Leaderboards</span>
         </Link>
-        <Link to="/livechat" className="flex flex-col items-center">
+        <Link to="/leaderboard" className="flex flex-col items-center">
           {/* <FaBolt size={24} className="text-black dark:text-[#ccc]" /> */}
           <IoPowerOutline size={24} className="text-black dark:text-[#ccc]"/>
-          <span className="text-sm text-black dark:text-[#ccc]">LiveChat</span>
+          <span className="text-sm text-black dark:text-[#ccc]">Refferals</span>
         </Link>
         
-        <Link to="/" className="flex flex-col items-center">
+        <Link to="/wallet" className="flex flex-col items-center">
           <RiRobot3Line size={24} className="text-black dark:text-[#ccc]" />
-          <span className="text-sm text-black dark:text-[#ccc]">AI Bot</span>
+          <span className="text-sm text-black dark:text-[#ccc]">Wallet</span>
         </Link>
       
-        <Link to="/" className="flex flex-col items-center">
+        {/* <Link to="/" className="flex flex-col items-center">
           <TbBrandGoogleAnalytics size={24} className="text-black dark:text-[#ccc]" />
           <span className="text-sm text-black dark:text-[#ccc]">Analytics</span>
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

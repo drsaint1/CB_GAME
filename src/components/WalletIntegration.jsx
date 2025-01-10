@@ -7,6 +7,14 @@ import { WalletModalProvider, WalletMultiButton, } from "@solana/wallet-adapter-
 import "@solana/wallet-adapter-react-ui/styles.css";
 import axios from "axios";
 
+// import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+// import { Program, AnchorProvider, web3, utils, BN } from "@project-serum/anchor";
+// // import idl from "./idl.json"; // Your IDL file
+// const programId = new PublicKey(idl.address); // Replace with your program's address
+// const network = "https://api.devnet.solana.com"; // Use Mainnet in production
+// const preflightCommitment = "processed";
+
+
 function WalletIntegration({ onConnect }) {
   const wallets = useMemo( () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], [] );
 
