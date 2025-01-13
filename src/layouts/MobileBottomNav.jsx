@@ -6,7 +6,7 @@ import { BiConversation } from 'react-icons/bi';
 import { MdWidgets } from 'react-icons/md';
 import { RiNotification2Line, RiNotification2Fill, RiRobot2Fill,RiRobot2Line, RiRobot3Fill, RiRobot3Line,RiHome7Line, RiHome7Fill, RiAccountBoxFill,RiAccountBoxLine,RiLogoutCircleLine } from "react-icons/ri";
 import { BiExtension } from 'react-icons/bi';
-import { Link } from '@remix-run/react';
+import { Link } from 'react-router-dom';
 
 const MobileBottomNav = () => {
   return (
@@ -20,7 +20,7 @@ const MobileBottomNav = () => {
           <BiExtension size={24} className="text-black dark:text-[#ccc]" />
           <span className="text-sm text-black dark:text-[#ccc]">Leaderboards</span>
         </Link>
-        <Link to="/leaderboard" className="flex flex-col items-center">
+        <Link to="/referrals" className="flex flex-col items-center">
           {/* <FaBolt size={24} className="text-black dark:text-[#ccc]" /> */}
           <IoPowerOutline size={24} className="text-black dark:text-[#ccc]"/>
           <span className="text-sm text-black dark:text-[#ccc]">Refferals</span>

@@ -1,0 +1,445 @@
+{
+  "address": "5j1x46tS9NXh6LCkR6MUeV2HyHKSv5nyqJr7JtDbFurD",
+  "metadata": {
+    "name": "cb_game",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "admin_deposit_to_vault",
+      "discriminator": [117, 169, 234, 70, 12, 200, 186, 96],
+      "accounts": [
+        {
+          "name": "admin_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault_account",
+          "writable": true
+        },
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "admin_withdraw_from_vault",
+      "discriminator": [215, 36, 157, 132, 73, 52, 181, 42],
+      "accounts": [
+        {
+          "name": "vault_account",
+          "writable": true
+        },
+        {
+          "name": "admin_token_account",
+          "writable": true
+        },
+        {
+          "name": "admin_authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "check_balance",
+      "discriminator": [73, 83, 254, 62, 189, 158, 241, 42],
+      "accounts": [
+        {
+          "name": "session_data",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true,
+          "relations": ["session_data"]
+        }
+      ],
+      "args": [],
+      "returns": "u64"
+    },
+    {
+      "name": "claim_referral_rewards",
+      "discriminator": [23, 112, 76, 162, 157, 106, 203, 246],
+      "accounts": [
+        {
+          "name": "referrer_session_data",
+          "writable": true
+        },
+        {
+          "name": "treasury_account",
+          "writable": true
+        },
+        {
+          "name": "referrer_token_account",
+          "writable": true
+        },
+        {
+          "name": "treasury_authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "earn_cb",
+      "discriminator": [189, 75, 6, 105, 133, 186, 29, 232],
+      "accounts": [
+        {
+          "name": "session_data",
+          "writable": true
+        },
+        {
+          "name": "referrer_session_data",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true,
+          "relations": ["session_data"]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "treasury_account",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_account",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "shield_price",
+          "type": "u64"
+        },
+        {
+          "name": "referral_reward",
+          "type": "u64"
+        },
+        {
+          "name": "continue_price",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_session",
+      "discriminator": [69, 130, 92, 236, 107, 231, 159, 129],
+      "accounts": [
+        {
+          "name": "session_data",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "referrer",
+          "type": {
+            "option": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "pay_to_continue",
+      "discriminator": [28, 9, 222, 168, 131, 178, 23, 143],
+      "accounts": [
+        {
+          "name": "player_token_account",
+          "writable": true
+        },
+        {
+          "name": "treasury_account",
+          "writable": true
+        },
+        {
+          "name": "session_data",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true,
+          "relations": ["session_data"]
+        },
+        {
+          "name": "player_authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "purchase_shield",
+      "discriminator": [107, 176, 214, 191, 27, 177, 111, 189],
+      "accounts": [
+        {
+          "name": "player_token_account",
+          "writable": true
+        },
+        {
+          "name": "treasury_account",
+          "writable": true
+        },
+        {
+          "name": "session_data",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true,
+          "relations": ["session_data"]
+        },
+        {
+          "name": "player_authority",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_referrer",
+      "discriminator": [208, 225, 56, 15, 244, 21, 195, 34],
+      "accounts": [
+        {
+          "name": "session_data",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true,
+          "relations": ["session_data"]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_referrer",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_tokens",
+      "discriminator": [2, 4, 225, 61, 19, 182, 106, 170],
+      "accounts": [
+        {
+          "name": "vault_account",
+          "writable": true
+        },
+        {
+          "name": "player_token_account",
+          "writable": true
+        },
+        {
+          "name": "session_data"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+    },
+    {
+      "name": "CustomTokenAccount",
+      "discriminator": [124, 97, 207, 33, 50, 166, 8, 46]
+    },
+    {
+      "name": "SessionData",
+      "discriminator": [93, 33, 176, 4, 81, 16, 19, 228]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidShieldAmount",
+      "msg": "Invalid shield amount."
+    },
+    {
+      "code": 6001,
+      "name": "ShieldLimitExceeded",
+      "msg": "Shield purchase limit exceeded."
+    },
+    {
+      "code": 6002,
+      "name": "InsufficientBalance",
+      "msg": "Insufficient balance."
+    },
+    {
+      "code": 6003,
+      "name": "InvalidReferrer",
+      "msg": "Invalid referrer."
+    },
+    {
+      "code": 6004,
+      "name": "NoPendingRewards",
+      "msg": "No pending rewards to claim."
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shield_price",
+            "type": "u64"
+          },
+          {
+            "name": "referral_reward",
+            "type": "u64"
+          },
+          {
+            "name": "continue_price",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CustomTokenAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shields_purchased",
+            "type": "u8"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "referrer",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "earned_cb",
+            "type": "u64"
+          },
+          {
+            "name": "pending_rewards",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

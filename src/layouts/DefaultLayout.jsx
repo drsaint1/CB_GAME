@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header/index";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/sidebar/indexx";
+import Sidebar from "../components/sidebar/index";
 import { AppProvider, useAppContext } from "../components/context/AppContext";
 
 function LayoutContent({ children }) {
