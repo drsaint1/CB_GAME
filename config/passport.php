@@ -1,0 +1,126 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Passport Guard
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify which authentication guard Passport will use when
+    | authenticating users. This value should correspond with one of your
+    | guards that is already present in your "auth" configuration file.
+    |
+    */
+
+    'guard' => 'web',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Encryption Keys
+    |--------------------------------------------------------------------------
+    |
+    | Passport uses encryption keys while generating secure access tokens for
+    | your application. By default, the keys are stored as local files but
+    | can be set via environment variables when that is more convenient.
+    |
+    */
+
+    'private_key' => env('PASSPORT_PRIVATE_KEY' || "-----BEGIN PRIVATE KEY-----
+    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
+    AKqSSGOH0LgywRpLL0SLA+clFuHi/g==
+    -----END PRIVATE KEY-----"),
+
+    'public_key' => env('PASSPORT_PUBLIC_KEY' || "-----BEGIN PUBLIC KEY-----
+    MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAtiaSxPuFZcMpVAcmu3Ic
+    HjyZ+w5fMxB5ov3srI6IjTrbcRPmfbU/UnlNFwUCTUrasevKhezh5H41HyXtpEHB
+    S+9r8ngoT0BIynKmGTgmfbhvM351fH5xhAbQ9GQZQNmqHFqjCoOVy705BA1ebyWN
+    UEqbqyqz3/nGEcegt+YUhV/NGel76WbnVv7bc4qq9xRLMCGZ+JQJ0c9nFBguLFss
+    tkR85rVW0VK9w7pQIejw/bAzxxA55sfGsLF75QEOM3sgIFBQL+fzSfxWt4DVa//B
+    eiQFWYDMZx5QZJ9gSSf460M9esD28h4GXTjCql/JXZfY07BJOmdE5Qrd52bgtXf7
+    chrKetFzPJ9pboNrcXDEk2OCHkCO8BXQrcuTpwl2rJ6ofzCTMvvwI/95vjnH14eo
+    jRlefZgO6J8JaYzLPK93uhushNBscLXxi02Hran47t09BM/OOQvdFPqFxVnF6Az3
+    bXlIgXGbt1E0aIJoSITZp/u1Jd0nLPcOZ/dKcAYivW7GPsUMUsF94hlwRIVT3/kX
+    A04RA+A7pFoAG9AG6zcHoAbzGJoyQ7m+ooh70l712kdB4yry/m+SfFIeGZvAZ0Of
+    1uSWfiLs9MoDNjx+u8PoKxMC8aiBVCTmdWKcRRy0/NS81xMGqx+py7I+MEkz1QIr
+    I6LmfMKQFxMKV6YIfnNj7okCAwEAAQ==
+    -----END PUBLIC KEY-----"),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Client UUIDs
+    |--------------------------------------------------------------------------
+    |
+    | By default, Passport uses auto-incrementing primary keys when assigning
+    | IDs to clients. However, if Passport is installed using the provided
+    | --uuids switch, this will be set to "true" and UUIDs will be used.
+    |
+    */
+
+    'client_uuids' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Personal Access Client
+    |--------------------------------------------------------------------------
+    |
+    | If you enable client hashing, you should set the personal access client
+    | ID and unhashed secret within your environment file. The values will
+    | get used while issuing fresh personal access tokens to your users.
+    |
+    */
+
+    'personal_access_client' => [
+        'id' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_ID'),
+        'secret' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET'),
+    ],
+
+];
