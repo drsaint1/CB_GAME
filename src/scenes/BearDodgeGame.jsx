@@ -82,15 +82,15 @@ function BearDodgeGame({ walletAddress }) {
 
         // Add new balls every 10 seconds
         const addBallInterval = setInterval(() => {
-            if (balls.current.length < 4) { // Limit maximum number of balls
+            // if (balls.current.length < 4) { // Limit maximum number of balls
                 balls.current.push({
                     x: Math.random() * canvasWidth,
                     y: Math.random() * canvasHeight,
                     vx: (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2), // Slower speed
                     vy: (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2),
                 });
-            }
-        }, 200000);
+            // }
+        }, 10000);
 
         return () => {
             clearInterval(gameLoop);
@@ -111,8 +111,8 @@ function BearDodgeGame({ walletAddress }) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Update Bear position based on keys pressed (Horizontal movement only)
-        // const speed = 5;
-        const speed = 2;
+        const speed = 5;
+        // const speed = 2;
         if (keysPressed.current["ArrowLeft"] && bear.current.x > 0) {
             bear.current.x -= speed;
         }
