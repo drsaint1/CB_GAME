@@ -222,13 +222,41 @@ function BearDodgeGame() {
       canvas.addEventListener("touchmove", handleTouchMove);
 
       const addBallInterval = setInterval(() => {
-        balls.current.push({
-          x: Math.random() * canvasWidth,
-          y: Math.random() * canvasHeight,
+        const edge = Math.floor(Math.random() * 4); // 0 = top, 1 = bottom, 2 = left, 3 = right
+        let ball = {
+          x: 0,
+          y: 0,
           vx: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
           vy: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
           radius: 10 * (canvasWidth / baseCanvasWidth),
-        });
+        };
+
+        switch (edge) {
+          case 0: // Top edge
+            ball.x = Math.random() * canvasWidth;
+            ball.y = 0;
+            ball.vy = Math.abs(ball.vy); // Ensure it moves downward
+            break;
+          case 1: // Bottom edge
+            ball.x = Math.random() * canvasWidth;
+            ball.y = canvasHeight;
+            ball.vy = -Math.abs(ball.vy); // Ensure it moves upward
+            break;
+          case 2: // Left edge
+            ball.x = 0;
+            ball.y = Math.random() * canvasHeight;
+            ball.vx = Math.abs(ball.vx); // Ensure it moves to the right
+            break;
+          case 3: // Right edge
+            ball.x = canvasWidth;
+            ball.y = Math.random() * canvasHeight;
+            ball.vx = -Math.abs(ball.vx); // Ensure it moves to the left
+            break;
+          default:
+            break;
+        }
+
+        balls.current.push(ball);
       }, 10000);
 
       return () => {
