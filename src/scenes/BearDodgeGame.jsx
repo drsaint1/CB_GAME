@@ -49,9 +49,19 @@ function BearDodgeGame({ walletAddress }) {
     const bear = useRef({ x: 600, width: 150, height: 70 }); // Increased size by 30%
     const keysPressed = useRef({ ArrowLeft: false, ArrowRight: false }); // Correct initialization
     const bearImage = useRef(new Image());
+    const backgroundImage = useRef(new Image());
+    const canvasBackgroundImage = useRef(new Image());
+    const backgroundSound = useRef(null);
+    const collisionSound = useRef(null);
 
-    const canvasWidth = 1200;
-    const canvasHeight = 720;
+    
+  const baseCanvasWidth = 1200;
+  const baseCanvasHeight = 720;
+  const [canvasWidth, setCanvasWidth] = useState(baseCanvasWidth);
+  const [canvasHeight, setCanvasHeight] = useState(baseCanvasHeight);
+
+    // const canvasWidth = 1200;
+    // const canvasHeight = 720;
 
     const loadBearImage = () => {
         bearImage.current.src = "/bear.png"; // Path to your bear image
@@ -60,6 +70,50 @@ function BearDodgeGame({ walletAddress }) {
             startGame(); // Start the game loop only after the image is loaded
         };
     };
+
+
+    const loadAssets = () => {
+        bearImage.current.src = "/bear.png";
+        backgroundImage.current.src = "/background.png";
+        canvasBackgroundImage.current.src = "/canvas-background.jpg";
+    
+        if (!backgroundSound.current) {
+          backgroundSound.current = new Audio("/background.mp3");
+          backgroundSound.current.loop = true;
+        }
+    
+        if (!collisionSound.current) {
+          collisionSound.current = new Audio("/collision.mp3");
+        }
+      };
+    
+      const resizeGame = () => {
+        const scaleFactor = Math.min(
+          window.innerWidth / baseCanvasWidth,
+          window.innerHeight / baseCanvasHeight
+        );
+        setCanvasWidth(baseCanvasWidth * scaleFactor);
+        setCanvasHeight(baseCanvasHeight * scaleFactor);
+    
+        // Adjust bear and ball size
+        bear.current.width = 150 * scaleFactor;
+        bear.current.height = 70 * scaleFactor;
+        balls.current.forEach((ball) => {
+          ball.radius = 10 * scaleFactor;
+        });
+    
+        // Recenter the bear on resize
+        bear.current.x = (baseCanvasWidth * scaleFactor - bear.current.width) / 2;
+    
+        // Adjust the canvas container padding to center the canvas
+        const canvasContainer = document.getElementById("canvas-container");
+        if (canvasContainer) {
+          const leftPadding = (window.innerWidth - canvasWidth) / 2;
+          canvasContainer.style.paddingLeft = `${leftPadding}px`;
+          canvasContainer.style.paddingRight = `${leftPadding}px`;
+        }
+      };
+
 
     const startGame = () => {
         const canvas = canvasRef.current;
@@ -79,6 +133,7 @@ function BearDodgeGame({ walletAddress }) {
         window.addEventListener("keydown", handleKeyDown);
         window.addEventListener("keyup", handleKeyUp);
         canvas.addEventListener("mousemove", handleMouseMove);
+
 
         // Add new balls every 10 seconds
         const addBallInterval = setInterval(() => {
@@ -122,6 +177,17 @@ function BearDodgeGame({ walletAddress }) {
         ) {
             bear.current.x += speed;
         }
+
+          // Draw Bear
+    // if (bearImage.current.complete && bearImage.current.naturalWidth > 0) {
+    //     ctx.drawImage(
+    //       bearImage.current,
+    //       bear.current.x,
+    //       canvas.height / 2 - bear.current.height / 2,
+    //       bear.current.width,
+    //       bear.current.height
+    //     );
+    //   }
 
         // Draw Bear Image with the increased size
         ctx.drawImage(
@@ -168,6 +234,7 @@ function BearDodgeGame({ walletAddress }) {
                 ball.y > canvas.height / 2 - bear.current.height / 2 &&
                 ball.y < canvas.height / 2 + bear.current.height / 2
             ) {
+                collisionSound.current.play();
                 setGameOver(true);
             }
         });
@@ -249,13 +316,24 @@ function BearDodgeGame({ walletAddress }) {
     }, []);
 
     useEffect(() => {
+        loadAssets();
+        resizeGame();
+        window.addEventListener("resize", resizeGame);
+    
+        if (backgroundSound.current && backgroundSound.current.paused) {
+          backgroundSound.current.play().catch((err) => {
+            console.error("Failed to play background music:", err);
+          });
+        }
+    
+
         if (!gameOver) {
             // Delay starting the game until the DOM is ready
             requestAnimationFrame(() => {
                 if (canvasRef.current) startGame();
             });
         }
-    }, [gameOver]);
+    }, [gameOver, , canvasWidth, canvasHeight]);
 
 
     // Handle "Pay to Continue"
@@ -393,7 +471,7 @@ function BearDodgeGame({ walletAddress }) {
 
 
     return (
-        <div>
+        <div style={{ backgroundImage: `url(${backgroundImage.current.src})` }}>
             {
                 //  countdown > 0 ? (
                 //     <div className="countdown">
@@ -456,7 +534,7 @@ function BearDodgeGame({ walletAddress }) {
                             <button onClick={handleWithdrawTokens} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg shadow-md transition" > Withdraw Tokens </button>
                         </div>
                         <p className="text-3xl font-semibold text-white">Cb earned: {Math.floor(cbEarned / 60)}</p>
-                        <div className="relative w-full max-w-4xl bg-gray-100 border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden ">
+                        <div className="relative w-full max-w-4xl bg-gray-100 border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden " id="canvas-container">
                             <canvas ref={canvasRef} className="w-full h-full object-cover" ></canvas>
                         </div>
                     </div>
