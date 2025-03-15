@@ -1,14 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import SidebarLinkGroup from './SidebarLinkGroup';
-import Logo from '../../images/logo/logo.svg';
-import ClickOutside from "../ClickOutside";
-import SidebarProButton from "./SidebarProButton";
-import { FaTachometerAlt, FaCalendarAlt, FaUser, FaWpforms, FaTable, FaCog, FaChartBar, FaCube } from "react-icons/fa"; // Import React Icons
-import { RiNotification2Line, RiNotification2Fill, RiRobot2Fill, RiRobot2Line, RiRobot3Fill, RiRobot3Line, RiHome7Line, RiHome7Fill, RiAccountBoxFill, RiAccountBoxLine, RiLogoutCircleLine } from "react-icons/ri";
-import { IoMailSharp, IoMailOutline, IoMailUnreadOutline, IoTicketOutline } from "react-icons/io5";
-import { IoClose } from "react-icons/io5";
-
+import SidebarProButton from './sidebarProbutton';
 
 const Sidebar = ({ user,sidebarOpen, setSidebarOpen }) => {
   const location = useLocation();

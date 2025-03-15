@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import Header from "../components/Header/index";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar/index";
-import { AppProvider, useAppContext } from "../components/context/AppContext";
+import AppProvider, { useAppContext } from "../components/context/AppContext";
 
 function LayoutContent({ children }) {
-  const { user } = useAppContext(); // Access context here
+  const { user, loading } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -25,6 +25,10 @@ function LayoutContent({ children }) {
       navigate("/connect");
     }
   }, [navigate]);
+
+  if (loading) {
+    return <div>Loading...</div>; // You can replace this with a spinner or loading animation
+  }
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -55,5 +59,3 @@ export default function DefaultLayout({ children }) {
     </AppProvider>
   );
 }
-
-

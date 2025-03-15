@@ -1,70 +1,84 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-
-import { ConnectionProvider, WalletProvider, useWallet, } from "@solana/wallet-adapter-react";
-import { PhantomWalletAdapter, SolflareWalletAdapter, } from "@solana/wallet-adapter-wallets";
-import { WalletModalProvider, WalletMultiButton, } from "@solana/wallet-adapter-react-ui";
+import { useNavigate } from "react-router-dom";
+import {
+  ConnectionProvider,
+  WalletProvider,
+  useWallet,
+} from "@solana/wallet-adapter-react";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+import {
+  WalletModalProvider,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import axios from "axios";
-
-// import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-// import { Program, AnchorProvider, web3, utils, BN } from "@project-serum/anchor";
-// // import idl from "./idl.json"; // Your IDL file
-// const programId = new PublicKey(idl.address); // Replace with your program's address
-// const network = "https://api.devnet.solana.com"; // Use Mainnet in production
-// const preflightCommitment = "processed";
-
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function WalletIntegration({ onConnect }) {
-  const wallets = useMemo( () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], [] );
-
+  const wallets = useMemo(
+    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    []
+  );
   const [usernameModal, setUsernameModal] = useState(false);
   const [username, setUsername] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
-  const [isConnected, setIsConnected] = useState(false); // Prevent infinite requests
-  const navigate = useNavigate(); // Initialize navigate
-
+  const [isConnected, setIsConnected] = useState(false);
+  const navigate = useNavigate();
 
   const WalletConnectionChecker = () => {
-    const { publicKey, connected } = useWallet();
-
-    useEffect(() => {
-      if (connected && publicKey && !isConnected) {
-        setIsConnected(true); // Prevent further requests
-        handleWalletConnection(publicKey.toString());
+      const { publicKey, connected, wallet } = useWallet();
+    
+      useEffect(() => {
+        if (connected && publicKey) {
+          const walletName = wallet?.adapter?.name || "Unknown Wallet";
+          handleWalletConnection(publicKey.toString(), walletName);
+        }
+      }, [connected, publicKey]);
+    
+      return null;
+    };
+    
+    const handleWalletConnection = async (address, walletName) => {
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/connect-wallet`,
+          {
+            wallet_address: address,
+          }
+        );
+        const { exists, user } = response.data;
+    
+        const expirationTime = new Date().getTime() + 20 * 24 * 60 * 60 * 1000; // 20 days
+        localStorage.setItem(
+          "walletData",
+          JSON.stringify({
+            walletAddress: address,
+            walletName,
+            expiresAt: expirationTime,
+          })
+        );
+    
+        if (exists) {
+          onConnect(user);
+          navigate("/play");
+        } else {
+          setWalletAddress(address);
+          setUsernameModal(true);
+        }
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          "Failed to connect wallet. Please try again.";
+        toast.error(errorMessage);
+        console.error("Error connecting wallet:", error);
       }
-    }, [connected, publicKey, isConnected]);
+    };
+    
 
-    return null;
-  };
-
-  const handleWalletConnection = async (address) => {
-    try {
-      const response = await axios.post("http://127.0.0.1:8000/api/connect-wallet", {
-        wallet_address: address,
-      });
-      const { exists, user } = response.data;
-
-      // Save wallet address and expiration time to localStorage
-      const expirationTime = new Date().getTime() + 20 * 24 * 60 * 60 * 1000; // 20 days
-      localStorage.setItem("walletData", JSON.stringify({ walletAddress: address, expiresAt: expirationTime }));
-
-      if (exists) {
-        // localStorage.setItem("walletAddress", address); // Save wallet address in localStorage
-        // Wallet exists, fetch user data
-        onConnect(user);
-        navigate("/play");
-      } else {
-        // Wallet is new, show username modal
-        setWalletAddress(address);
-        setUsernameModal(true);
-      }
-    } catch (error) {
-      console.error("Error connecting wallet:", error);
-    }
-  };
-
-  // Check localStorage on mount
   useEffect(() => {
     const walletData = JSON.parse(localStorage.getItem("walletData"));
     if (walletData) {
@@ -72,10 +86,8 @@ function WalletIntegration({ onConnect }) {
       const currentTime = new Date().getTime();
 
       if (currentTime < expiresAt) {
-        // Wallet is still valid
         handleWalletConnection(walletAddress);
       } else {
-        // Wallet expired, clear localStorage
         localStorage.removeItem("walletData");
       }
     }
@@ -83,51 +95,62 @@ function WalletIntegration({ onConnect }) {
 
   const handleUsernameSubmit = async () => {
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/set-username", {
-        wallet_address: walletAddress,
-        username,
-      });
-
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/setUsername`,
+        {
+          wallet_address: walletAddress,
+          username,
+        }
+      );
       setUsernameModal(false);
+      toast.success("Username set successfully!");
       onConnect(response.data.user);
       navigate("/play");
     } catch (error) {
-      console.error("Error setting username:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to set username. Please try again.";
+      toast.error(errorMessage);
     }
   };
 
-
-
-  // const WalletConnectionChecker = () => {
-  //   const { connected } = useWallet();
-
-  //   useEffect(() => {
-  //     if (connected) {
-  //       onConnect(); // Notify parent when the wallet is connected
-  //     }
-  //   }, [connected]);
-
-  //   return null; // No visual output, only logic
-  // };
-
   return (
     <ConnectionProvider endpoint="https://api.devnet.solana.com">
-      <WalletProvider wallets={wallets}>
-        {/* Removed autoConnect */}
+      <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <WalletMultiButton />
           <WalletConnectionChecker />
+          <ToastContainer />
 
-          {/* Username Modal */}
           {usernameModal && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div className=" max-w-md p-6 bg-white rounded-lg shadow-lg">
-                <h2 className="mb-4 text-xl font-semibold text-gray-800"> Set Your Username </h2>
-                <p className="mb-6 text-sm text-gray-600"> Welcome! Enter a username to complete your wallet setup. </p>
-                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" className="w-full px-4 py-2 mb-4 text-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div className="max-w-md p-6 bg-white rounded-lg shadow-lg">
+                <h2 className="mb-4 text-xl font-semibold text-gray-800">
+                  Set Your Username
+                </h2>
+                <p className="mb-6 text-sm text-gray-600">
+                  Welcome! Enter a username to complete your wallet setup.
+                </p>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                  className="w-full px-4 py-2 mb-4 text-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
                 <div className="flex justify-end space-x-4">
-                  <button onClick={() => setUsernameModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-300" > Cancel </button>
-                  <button onClick={handleUsernameSubmit} className="px-4 py-2 text-sm font-medium text-black bg-blue rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400" > Submit </button>
+                  <button
+                    onClick={() => setUsernameModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300 focus:ring-2 focus:ring-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUsernameSubmit}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400"
+                  >
+                    Submit
+                  </button>
                 </div>
               </div>
             </div>
