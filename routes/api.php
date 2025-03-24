@@ -30,7 +30,7 @@ use Illuminate\Http\Request;
 
 // Public Routes
 Route::post('/connect-wallet', [UserController::class, 'connectWallet']);
-Route::get('/getUserDetails', [UserController::class, 'getUserDetails']);
+Route::post('/getUserDetails', [UserController::class, 'getUserDetails']);
 Route::post('/setUsername', [UserController::class, 'setUsername']);
 
 Route::post('/wallet/store', [WalletController::class, 'store']); // Store wallet address
@@ -51,7 +51,8 @@ Route::post('/wallet/withdraw', [WalletController::class, 'withdraw']); // Withd
 Route::post('/withdraw', [WalletController::class, 'withdrawPoints']);
 
 
-Route::get('/transactions', [TransactionController::class, 'index']); // Fetch transactions
+Route::get('/transactions', [TransactionController::class, 'getTransactions']); // Fetch transactions
 
+Route::post('/transactions/create', [TransactionController::class, 'createTransaction']);
 
 

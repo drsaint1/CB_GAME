@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    // protected $fillable = ['user_id', 'transaction_type', 'amount', 'balance_before', 'balance_after', 'reference_id'];
+    use HasFactory;
+
     protected $fillable = ['user_id', 'transaction_id', 'action', 'amount'];
+
+    // Explicitly define the primary key and auto-increment behavior
+    protected $primaryKey = 'id';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     public function user()
     {

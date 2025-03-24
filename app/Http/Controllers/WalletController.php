@@ -3,60 +3,76 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Wallet;
+use App\Models\User;
+use App\Models\Transaction;
 
 class WalletController extends Controller
 {
-
     public function getWallet($id)
     {
-        $wallet = Wallet::where('user_id', $id)->first();
-        return response()->json($wallet);
+        try {
+            $wallet = Wallet::where('user_id', $id)->firstOrFail();
+            return response()->json($wallet);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error("Wallet not found for user ID: $id");
+            return response()->json(['message' => 'Wallet not found'], 404);
+        }
     }
 
     public function withdrawPoints(Request $request)
     {
-        $request->validate(['points' => 'required|integer']);
-
-        $wallet = Wallet::where('user_id', $request->user()->id)->first();
-
-        if ($wallet->points < $request->points) {
-            return response()->json(['message' => 'Insufficient points'], 400);
-        }
-
-        $wallet->update([
-            'points' => $wallet->points - $request->points,
-            'withdrawn' => $wallet->withdrawn + $request->points
+        $request->validate([
+            'wallet_address' => 'required|string|exists:users,wallet_address',
+            'points' => 'required|integer|min:1'
         ]);
 
-        return response()->json(['message' => 'Points withdrawn successfully']);
+        return DB::transaction(function () use ($request) {
+            try {
+                $user = User::where('wallet_address', $request->wallet_address)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                
+                // Update wallet
+                $user->points -= $request->points;;
+                $user->save();
+
+                // Create transaction
+                $transaction = Transaction::create([
+                    'user_id' => $user->id,
+                    'transaction_id' => $this->generateTransactionId(),
+                    'action' => 'withdrawal',
+                    'amount' => -$request->points,
+                ]);
+
+             
+
+                return response()->json([
+                    'message' => 'Points withdrawn successfully',
+                    'transaction_id' => $transaction->transaction_id,
+                    'new_balance' => $user->points
+                ]);
+
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                Log::error("Resource not found: " . $e->getMessage());
+                return response()->json(['message' => 'Resource not found'], 404);
+            } catch (\Exception $e) {
+                Log::error("Withdrawal failed: " . $e->getMessage());
+                DB::rollBack();
+                return response()->json(['message' => 'Withdrawal processing failed'], 500);
+            }
+        });
     }
 
-
-    // public function withdrawPoints(Request $request)
-    // {
-    //     $user = auth()->user();
-    //     $amount = $request->input('amount');
-
-    //     if ($user->wallet->total_points < $amount) {
-    //         return response()->json(['error' => 'Insufficient points'], 400);
-    //     }
-
-    //     // Deduct points
-    //     $balanceBefore = $user->wallet->total_points;
-    //     $user->wallet->total_points -= $amount;
-    //     $user->wallet->withdrawn_points += $amount;
-    //     $user->wallet->save();
-
-    //     // Log transaction
-    //     Transaction::create([
-    //         'user_id' => $user->id,
-    //         'transaction_type' => 'withdrawal',
-    //         'amount' => -$amount,
-    //         'balance_before' => $balanceBefore,
-    //         'balance_after' => $user->wallet->total_points
-    //     ]);
-
-    //     return response()->json(['message' => 'Withdrawal successful']);
-    // }
+    private function generateTransactionId(): string
+    {
+        return implode('-', [
+            'tx',
+            now()->format('YmdHis'),
+            strtoupper(bin2hex(random_bytes(4)))
+        ]);
+    }
 }

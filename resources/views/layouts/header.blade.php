@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en" class="js">
-
 <head>
     <base href="/">
     <meta charset="utf-8">
