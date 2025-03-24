@@ -21,11 +21,58 @@ import {
   TOKEN_PROGRAM_ID,
   PROGRAM_ADDRESS,
 } from "../constants";
+import axios from "axios";
 
 // Ensure Buffer is available in the browser
 if (typeof Buffer === "undefined") {
   globalThis.Buffer = require("buffer").Buffer;
 }
+
+export const useCreateTransaction = () => {
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const createTransaction = async (action, amount) => {
+    const walletData = JSON.parse(localStorage.getItem("walletData"));
+
+    if (!walletData?.walletAddress) {
+      setErrorMessage("Wallet address not found.");
+      return;
+    }
+
+    try {
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/transactions/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          {
+            user_id: walletData.walletAddress,
+            wallet_address: walletData.walletAddress,
+            action,
+            amount,
+          }
+        ),
+      });
+
+      setSuccessMessage(
+        `✅ Transaction Successful`
+      );
+
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        error.response?.data?.message || "Failed to create transaction"
+      );
+    }
+  };
+
+  return { createTransaction, errorMessage, successMessage };
+};
 
 export function initializeProgram(wallet) {
   // if (!wallet?.publicKey) {
@@ -154,65 +201,68 @@ export function useInitializeConfig(program) {
       setError(null);
 
       try {
-        if (!program || !wallet?.publicKey) {
+        if (!program || !wallet || !wallet.publicKey) {
           throw new Error("Wallet not connected or Program not initialized");
         }
 
-        // Check if config PDA is already stored in local storage
+        // Check if config PDA exists in local storage
         const storedConfigPDA = localStorage.getItem("configPDA");
         if (storedConfigPDA) {
           console.log("Config PDA already exists in local storage.");
           return new PublicKey(storedConfigPDA); // Return the stored PDA
         }
 
-        // Generate keypair for config account (acts as signer)
+        // Generate a keypair for the config account
         const configKeypair = Keypair.generate();
-        const config = configKeypair.publicKey;
 
-        // Store the config PDA in local storage
-        localStorage.setItem("configPDA", config.toBase58());
+        // Create a new transaction
+        const transaction = new Transaction();
 
-        // Execute the initialize_config instruction
-        const tx = await program.methods
-          .initializeConfig(
-            new anchor.BN(shieldPrice),
-            new anchor.BN(referralReward),
-            new anchor.BN(continuePrice)
-          )
-          .accounts({
-            config: config, // Use generated keypair
-            payer: wallet.publicKey,
-            systemProgram: SystemProgram.programId,
-          })
-          .instruction();
-
-        // Create transaction
-        const transaction = new Transaction().add(tx);
-        const { blockhash } =
-          await program.provider.connection.getLatestBlockhash("confirmed");
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = wallet.publicKey;
-
-        // Partially sign with config keypair (required signer)
-        transaction.partialSign(configKeypair);
-
-        // Sign with wallet
-        const signedTx = await wallet.signTransaction(transaction);
-
-        // Send transaction
-        const signature = await program.provider.connection.sendRawTransaction(
-          signedTx.serialize(),
-          { skipPreflight: false, commitment: "confirmed" }
+        // Add the initialize_config instruction to the transaction
+        transaction.add(
+          await program.methods
+            .initializeConfig(
+              wallet.publicKey, // Admin public key
+              new anchor.BN(shieldPrice),
+              new anchor.BN(referralReward),
+              new anchor.BN(continuePrice)
+            )
+            .accounts({
+              config: configKeypair.publicKey,
+              payer: wallet.publicKey,
+              systemProgram: SystemProgram.programId,
+            })
+            .instruction()
         );
 
-        // Confirm transaction
+        transaction.recentBlockhash = (
+          await program.provider.connection.getLatestBlockhash()
+        ).blockhash;
+        transaction.feePayer = wallet.publicKey;
+
+        transaction.partialSign(configKeypair);
+
+        const signedTransaction = await wallet.signTransaction(transaction);
+
+        const signature = await program.provider.connection.sendRawTransaction(
+          signedTransaction.serialize(),
+          {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          }
+        );
+
+        // Confirm the transaction
         await program.provider.connection.confirmTransaction(
           signature,
           "confirmed"
         );
 
+        // Store config PDA in local storage
+        localStorage.setItem("configPDA", configKeypair.publicKey.toBase58());
+
         console.log("Config initialized. Transaction ID:", signature);
-        return config;
+        return configKeypair.publicKey;
       } catch (err) {
         console.error("Failed to initialize config:", err);
         setError(err.message || "Failed to initialize config");
@@ -373,17 +423,13 @@ export function usePurchaseShield(program) {
             "confirmed"
           );
 
+        console.log(confirmation, "confirmed");
         if (confirmation.value.err) {
           console.error("Transaction failed:", confirmation.value.err);
           throw new Error(
             `Transaction failed: ${JSON.stringify(confirmation.value.err)}`
           );
         }
-
-        console.log(
-          "Shield purchased successfully. Transaction ID:",
-          confirmation
-        );
         return txId;
       } catch (err) {
         console.error("Purchase Shield Error:", err);
@@ -614,7 +660,7 @@ export function useContinueGame(program) {
           );
         }
 
-        console.log("Game continued successfully. Transaction ID:", txId);
+        return txId;
       } catch (err) {
         console.error("Continue Game Error:", err);
         setError(err.message || "Failed to continue game");
@@ -754,10 +800,15 @@ export function useCheckBalance(program) {
           throw new Error("Wallet not connected or Program not initialized");
         }
 
-        const sessionDataAccount = await program.account.sessionData.fetch(sessionPDA);
+        const sessionDataAccount = await program.account.sessionData.fetch(
+          sessionPDA
+        );
 
         setBalance(sessionDataAccount.earnedCb.toNumber());
-        console.log("Balance checked successfully:", sessionDataAccount.earnedCb.toNumber());
+        console.log(
+          "Balance checked successfully:",
+          sessionDataAccount.earnedCb.toNumber()
+        );
       } catch (err) {
         console.error("Failed to check balance:", err);
         setError(err.message || "Failed to check balance");
@@ -770,5 +821,3 @@ export function useCheckBalance(program) {
 
   return { checkBalance, loading, error, balance };
 }
-
-

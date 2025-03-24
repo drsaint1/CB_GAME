@@ -1,9 +1,7 @@
-// BearDodgeGame.jsx
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import "../style/games.css";
 import {
   useInitializeSession,
-  usePurchaseShield,
   useWithdrawTokens,
   useSavePoints,
   useContinueGame,
@@ -12,26 +10,26 @@ import {
   useInitializeConfig,
   useCheckBalance,
 } from "../hooks/useContracts";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { PublicKey, Connection } from "@solana/web3.js";
-import { CB_TOKEN_MINT, PROGRAM_ADDRESS, VAULT_ADDRESS } from "../constants";
+import { PublicKey } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useAppContext } from "../components/context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 function WalletPage() {
   const [amount, setAmount] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionPDA, setSessionPDA] = useState(null);
   const [configPDA, setConfigPDA] = useState(null);
+  const [processingWithdrawal, setProcessingWithdrawal] = useState(false);
+  const [transactions, setTransactions] = useState([]);
 
-  // Load wallet data from localStorage
+  const { user } = useAppContext();
   const walletData = JSON.parse(localStorage.getItem("walletData"));
   if (!walletData) return <div>No wallet data found!</div>;
-  const userPublicKey = new PublicKey(walletData.walletAddress);
   const { wallet } = useWallet();
   const [programState, setProgramState] = useState(null);
 
-  // On-chain hooks
   const program = useMemo(() => {
     if (wallet) {
       return initializeProgram(wallet);
@@ -44,22 +42,53 @@ function WalletPage() {
       setProgramState(program);
     }
   }, []);
+  const fetchTransactions = async () => {
+    try {
+      // Send wallet address as a query parameter
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/transactions?wallet_address=${encodeURIComponent(
+          walletData.walletAddress
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.message || "Failed to fetch transactions");
+      }
+
+      setTransactions(data.transactions);
+    } catch (error) {
+      // console.error(error);
+      toast.error("Failed to fetch transactions. Please try again.");
+    }
+  };
+
+  // Fetch transactions when the component loads
+  useEffect(() => {
+    if (walletData.walletAddress) {
+      fetchTransactions();
+    }
+  }, [walletData.walletAddress]);
 
   const { initializeSession } = useInitializeSession(program);
   const { initializeConfig } = useInitializeConfig(program);
   const { withdrawTokens } = useWithdrawTokens(program);
-  const { checkBalance, loading: loadingBalance, error, balance } = useCheckBalance(program);
-
-  const { balance: walletBalance, transactions, fetchWalletData } =
-    useWalletData(userPublicKey);
-  console.log("user transaction", transactions);
-
+  const { savePoints } = useSavePoints(program);
+  const { checkBalance } = useCheckBalance(program);
   useEffect(() => {
     if (programState) {
-      fetchWalletData();
       initializeSession()
         .then((pda) => {
-          initializeConfig(10, 2, 5).then((config) => {
+          initializeConfig(100, 100, 100).then((config) => {
             setSessionPDA(pda);
             checkBalance(pda);
             setConfigPDA(config);
@@ -67,7 +96,7 @@ function WalletPage() {
         })
         .catch((err) => {
           console.error("Error initializing session:", err);
-          setErrorMessage("Error initializing session.");
+          toast.error("Error initializing session.");
         });
     }
   }, [programState]);
@@ -75,15 +104,43 @@ function WalletPage() {
   const handleWithdraw = async () => {
     try {
       setLoading(true);
-      setErrorMessage("");
+      setProcessingWithdrawal(true); // Show modal
+
       if (!program) throw new Error("Program not initialized!");
+
+      // Save Points First
+      await savePoints(sessionPDA, Math.floor(user.points));
+      checkBalance(sessionPDA);
+
+      // Process Withdrawal on Blockchain
       const txId = await withdrawTokens(sessionPDA, amount);
-      alert("Tokens withdrawn. Tx ID: " + txId);
-      fetchWalletData();
+      console.log("Withdrawal Successful on Blockchain, Tx ID:", txId);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/withdraw`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          wallet_address: walletData.walletAddress,
+          points: amount,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) toast.error(data.message || "Failed to update backend");
+
+      toast.success(
+        `✅ Withdrawal Successful! \n Blockchain Tx ID: ${txId} \n Transaction ID: ${data.transaction_id}`
+      );
+
+      // fetchWalletData(); // Refresh wallet balance
     } catch (error) {
-      setErrorMessage(error.message);
+      // console.error(error);
+      toast.error(error.message);
     } finally {
       setLoading(false);
+      setProcessingWithdrawal(false); // Hide modal
       setAmount("");
     }
   };
@@ -95,67 +152,95 @@ function WalletPage() {
         <p>Manage your wallet balance and transactions.</p>
       </div>
 
-      {errorMessage && (
-        <div className="bg-red-100 text-red-800 p-4 mt-4">{errorMessage}</div>
-      )}
+      {/* Display Error Messages */}
+      {/* {errorMessage && (
+        <div className="bg-red-100 text-red-800 p-4 mt-4 rounded-md">
+          ❌ {errorMessage}
+        </div>
+      )} */}
 
-      {loading ? (
-        <div className="text-center mt-6">Loading...</div>
-      ) : (
-        <>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-bold">Current Balance</h2>
-              <p className="text-3xl text-blue-600 mt-4">
-                {balance || "0.00"} CB
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-bold">Withdraw Tokens</h2>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount"
-                className="border p-2 w-full mt-4"
-              />
-              <button
-                onClick={handleWithdraw}
-                className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
-              >
-                Withdraw
-              </button>
-            </div>
-          </div>
+      {/* Display Success Messages */}
+      {/* {successMessage && (
+        <div className="bg-green-100 text-green-800 p-4 mt-4 rounded-md">
+          {successMessage}
+        </div>
+      )} */}
 
-          <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-bold">Transaction History</h2>
-            {transactions.length ? (
-              <table className="w-full mt-4">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((txn, index) => (
-                    <tr key={index}>
-                      <td>{txn.date}</td>
-                      <td>{txn.description}</td>
-                      <td>{txn.amount}</td>
-                      <td>{txn.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>No transactions available.</p>
-            )}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-bold">Current Balance</h2>
+          <p className="text-3xl text-blue-600 mt-4">
+            {user.points || "0.00"} CB
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-bold">Withdraw Tokens</h2>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => {
+              if (e.target.value > user.points) {
+                toast.dismiss();
+                toast.error(
+                  "Withwrawal amount can not be greater than point balance."
+                );
+              } else {
+                setAmount(e.target.value);
+              }
+            }}
+            placeholder="Enter amount"
+            className="border p-2 w-full mt-4"
+          />
+          <button
+            onClick={handleWithdraw}
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Withdraw
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-lg font-bold">Transaction History</h2>
+
+        {transactions.length > 0 ? (
+          <table className="w-full mt-4 border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-300 px-4 py-2">Date</th>
+                <th className="border border-gray-300 px-4 py-2">Action</th>
+                <th className="border border-gray-300 px-4 py-2">Amount</th>
+                <th className="border border-gray-300 px-4 py-2">
+                  Transaction ID
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((txn, index) => (
+                <tr key={index} className="border border-gray-300">
+                  <td className="px-4 py-2">
+                    {new Date(txn.created_at).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-2">{txn.action}</td>
+                  <td className="px-4 py-2">{txn.amount} CB</td>
+                  <td className="px-4 py-2">{txn.transaction_id}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>No transactions available.</p>
+        )}
+      </div>
+
+      {/* Modal for Withdrawal Processing */}
+      {processingWithdrawal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+            <h2 className="text-lg font-bold">Processing Withdrawal</h2>
+            <p>Please wait while we process your withdrawal...</p>
           </div>
-        </>
+        </div>
       )}
     </section>
   );

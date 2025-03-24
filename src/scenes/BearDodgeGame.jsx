@@ -1,104 +1,116 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import "../style/games.css";
 import {
-  useInitializeSession,
   usePurchaseShield,
-  useWithdrawTokens,
-  useSavePoints,
   useContinueGame,
   initializeProgram,
-  useInitializeConfig,
-  useCheckBalance,
+  useCreateTransaction,
 } from "../hooks/useContracts";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { toast } from "react-toastify";
 
-function BearDodgeGame() {
+function BearDodgeGame({ sessionPDA, configPDA }) {
   const canvasRef = useRef(null);
   const [cbEarned, setCbEarned] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [sessionPDA, setSessionPDA] = useState(null);
-  const [configPDA, setConfigPDA] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [lastSavedScore, setLastSavedScore] = useState(0);
 
-  // Bear / game references
-  const balls = useRef([{ x: 50, y: 50, vx: 3, vy: 3 }]);
-  const bear = useRef({ x: 600, width: 150, height: 70 });
+  const balls = useRef([{ x: 50, y: 50, vx: 3, vy: 3, radius: 10 }]);
+  const bear = useRef({ x: undefined, width: 150, height: 70 });
   const keysPressed = useRef({ ArrowLeft: false, ArrowRight: false });
   const bearImage = useRef(new Image());
   const backgroundImage = useRef(new Image());
+  const canvasBackgroundImage = useRef(new Image());
   const backgroundSound = useRef(null);
   const collisionSound = useRef(null);
 
-  // Canvas sizing
   const baseCanvasWidth = 1200;
   const baseCanvasHeight = 720;
   const [canvasWidth, setCanvasWidth] = useState(baseCanvasWidth);
   const [canvasHeight, setCanvasHeight] = useState(baseCanvasHeight);
-  const [programState, setProgramState] = useState(null);
 
-  const hasAskedRef = useRef(false);
+  const [shieldActive, setShieldActive] = useState(false);
+  const [shieldCountdown, setShieldCountdown] = useState(0);
+  const shieldActiveRef = useRef(false);
+
+  const [continueInvincible, setContinueInvincible] = useState(false);
+  const [invincibleCountdown, setInvincibleCountdown] = useState(0);
+  const continueInvincibleRef = useRef(false);
+
+  const { createTransaction } = useCreateTransaction();
   const { wallet } = useWallet();
 
-  const program = useMemo(() => {
-    if (wallet) {
-      return initializeProgram(wallet);
-    }
-    return null;
-  }, [wallet]);
-  const { initializeSession } = useInitializeSession(program);
-  const { initializeConfig } = useInitializeConfig(program);
+  const program = useMemo(
+    () => (wallet ? initializeProgram(wallet) : null),
+    [wallet]
+  );
   const { purchaseShield } = usePurchaseShield(program);
   const { continueGame } = useContinueGame(program);
-  const { savePoints } = useSavePoints(program);
-  const { checkBalance } = useCheckBalance(program);
-  useEffect(() => {
-    if (program) {
-      setProgramState(program);
-      console.log(program);
+
+  const saveGamePoints = async (pointsEarned) => {
+    const walletData = JSON.parse(localStorage.getItem("walletData"));
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/save-points`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallet_address: walletData.walletAddress,
+          points: pointsEarned,
+        }),
+      });
+      toast.success("Points saved successfully");
+    } catch (error) {
+      toast.error("Failed to save points");
     }
-  }, []);
+  };
 
-  // Prompt to initialize session after program is ready
   useEffect(() => {
-    if (!sessionPDA && !hasAskedRef.current) {
-      hasAskedRef.current = true;
-
-      if (window.confirm("Do you want to initialize your session now?")) {
-        initializeSession()
-          .then((pda) => {
-            initializeConfig(10, 2, 5).then((config) => {
-              setSessionPDA(pda);
-              checkBalance(pda, "checkBalance init");
-              setConfigPDA(config);
-            });
-          })
-          .catch((err) => {
-            console.error("Error initializing session:", err);
-            setErrorMessage("Error initializing session.");
-          });
+    if (gameOver && cbEarned > lastSavedScore) {
+      const pointsToSave = Math.floor((cbEarned - lastSavedScore) / 60);
+      if (pointsToSave > 0) {
+        saveGamePoints(pointsToSave);
+        setLastSavedScore(cbEarned);
       }
     }
-  }, [sessionPDA]);
+  }, [gameOver]);
 
-  // Load assets on mount
   useEffect(() => {
+    if (shieldActive && shieldCountdown > 0) {
+      const timer = setInterval(
+        () => setShieldCountdown((prev) => prev - 1),
+        1000
+      );
+      return () => clearInterval(timer);
+    } else if (shieldCountdown === 0) {
+      setShieldActive(false);
+      shieldActiveRef.current = false;
+    }
+  }, [shieldActive, shieldCountdown]);
+
+  useEffect(() => {
+    if (continueInvincible && invincibleCountdown > 0) {
+      const timer = setInterval(
+        () => setInvincibleCountdown((prev) => prev - 1),
+        1000
+      );
+      return () => clearInterval(timer);
+    } else if (invincibleCountdown === 0) {
+      setContinueInvincible(false);
+      continueInvincibleRef.current = false;
+    }
+  }, [continueInvincible, invincibleCountdown]);
+
+  const loadAssets = () => {
     bearImage.current.src = "/bear.png";
     backgroundImage.current.src = "/background.png";
+    canvasBackgroundImage.current.src = "/canvas-background.jpg";
 
-    if (!backgroundSound.current) {
-      backgroundSound.current = new Audio("/background.mp3");
-      backgroundSound.current.loop = true;
-    }
-    if (!collisionSound.current) {
-      collisionSound.current = new Audio("/collision.mp3");
-    }
+    backgroundSound.current = new Audio("/background.mp3");
+    backgroundSound.current.loop = true;
 
-    bearImage.current.onload = () => {
-      startGame();
-    };
-  }, []);
+    collisionSound.current = new Audio("/collision.mp3");
+  };
 
-  // Resize logic
   const resizeGame = () => {
     const scaleFactor = Math.min(
       window.innerWidth / baseCanvasWidth,
@@ -108,97 +120,79 @@ function BearDodgeGame() {
     setCanvasHeight(baseCanvasHeight * scaleFactor);
     bear.current.width = 150 * scaleFactor;
     bear.current.height = 70 * scaleFactor;
-    balls.current.forEach((ball) => {
-      ball.radius = 10 * scaleFactor;
-    });
+    balls.current.forEach((ball) => (ball.radius = 10 * scaleFactor));
     bear.current.x = (baseCanvasWidth * scaleFactor - bear.current.width) / 2;
   };
 
-  // Start the main game loop
-  const startGame = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    const gameLoop = setInterval(updateGame, 16);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    canvas.addEventListener("mousemove", handleMouseMove);
-
-    // Periodically add new balls
-    const addBallInterval = setInterval(() => {
-      balls.current.push({
-        x: Math.random() * canvasWidth,
-        y: Math.random() * canvasHeight,
-        vx: (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2),
-        vy: (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2),
-      });
-    }, 10000);
-
-    return () => {
-      clearInterval(gameLoop);
-      clearInterval(addBallInterval);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-    };
-  };
-
-  // Update loop
   const updateGame = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const speed = 5;
-    if (keysPressed.current["ArrowLeft"] && bear.current.x > 0) {
-      bear.current.x -= speed;
+    if (bear.current.x === undefined) {
+      bear.current.x = (canvas.width - bear.current.width) / 2;
     }
+
+    if (
+      canvasBackgroundImage.current.complete &&
+      canvasBackgroundImage.current.naturalWidth > 0
+    ) {
+      ctx.drawImage(
+        canvasBackgroundImage.current,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+    }
+
+    const speed = 5 * (canvasWidth / baseCanvasWidth);
+    if (keysPressed.current["ArrowLeft"] && bear.current.x > 0)
+      bear.current.x -= speed;
     if (
       keysPressed.current["ArrowRight"] &&
       bear.current.x < canvas.width - bear.current.width
-    ) {
+    )
       bear.current.x += speed;
+
+    if (bearImage.current.complete && bearImage.current.naturalWidth > 0) {
+      ctx.drawImage(
+        bearImage.current,
+        bear.current.x,
+        canvas.height / 2 - bear.current.height / 2,
+        bear.current.width,
+        bear.current.height
+      );
     }
 
-    // Draw the bear
-    ctx.drawImage(
-      bearImage.current,
-      bear.current.x,
-      canvas.height / 2 - bear.current.height / 2,
-      bear.current.width,
-      bear.current.height
-    );
-
-    // Move & draw balls
     balls.current.forEach((ball) => {
       ball.x += ball.vx;
       ball.y += ball.vy;
       if (ball.x <= 0 || ball.x >= canvas.width) ball.vx *= -1;
       if (ball.y <= 0 || ball.y >= canvas.height) ball.vy *= -1;
 
-      ctx.beginPath();
       const gradient = ctx.createRadialGradient(
-        ball.x - 4,
-        ball.y - 4,
-        1,
         ball.x,
         ball.y,
-        15
+        0,
+        ball.x,
+        ball.y,
+        ball.radius
       );
       gradient.addColorStop(0, "white");
       gradient.addColorStop(0.2, "lightblue");
       gradient.addColorStop(0.8, "blue");
       gradient.addColorStop(1, "darkblue");
+
+      ctx.beginPath();
       ctx.fillStyle = gradient;
-      ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2);
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.closePath();
 
-      // Collision detection
       if (
+        !shieldActiveRef.current &&
+        !continueInvincibleRef.current &&
         ball.x > bear.current.x &&
         ball.x < bear.current.x + bear.current.width &&
         ball.y > canvas.height / 2 - bear.current.height / 2 &&
@@ -209,20 +203,29 @@ function BearDodgeGame() {
       }
     });
 
-    // Increment CB tokens over time
     setCbEarned((prev) => prev + 1);
   };
 
-  // Event handlers
   const handleMouseMove = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
+    const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     bear.current.x = Math.max(
       0,
       Math.min(
         mouseX - bear.current.width / 2,
-        canvas.width - bear.current.width
+        canvasWidth - bear.current.width
+      )
+    );
+  };
+
+  const handleTouchMove = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const touchX = e.touches[0].clientX - rect.left;
+    bear.current.x = Math.max(
+      0,
+      Math.min(
+        touchX - bear.current.width / 2,
+        canvasWidth - bear.current.width
       )
     );
   };
@@ -241,73 +244,113 @@ function BearDodgeGame() {
     }
   };
 
-  // Restart the game (save points first)
-  const handleRestart = async () => {
+  useEffect(() => {
+    loadAssets();
+    resizeGame();
+    window.addEventListener("resize", resizeGame);
+
+    if (backgroundSound.current && backgroundSound.current.paused) {
+      backgroundSound.current.play().catch(console.error);
+    }
+
+    if (!gameOver) {
+      const canvas = canvasRef.current;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      const gameLoop = setInterval(updateGame, 16);
+
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+      canvas.addEventListener("mousemove", handleMouseMove);
+      canvas.addEventListener("touchmove", handleTouchMove);
+
+      const addBallInterval = setInterval(() => {
+        const edge = Math.floor(Math.random() * 4);
+        let ball = {
+          x: 0,
+          y: 0,
+          vx: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
+          vy: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3),
+          radius: 10 * (canvasWidth / baseCanvasWidth),
+        };
+        switch (edge) {
+          case 0:
+            ball.x = Math.random() * canvasWidth;
+            ball.y = 0;
+            ball.vy = Math.abs(ball.vy);
+            break;
+          case 1:
+            ball.x = Math.random() * canvasWidth;
+            ball.y = canvasHeight;
+            ball.vy = -Math.abs(ball.vy);
+            break;
+          case 2:
+            ball.x = 0;
+            ball.y = Math.random() * canvasHeight;
+            ball.vx = Math.abs(ball.vx);
+            break;
+          case 3:
+            ball.x = canvasWidth;
+            ball.y = Math.random() * canvasHeight;
+            ball.vx = -Math.abs(ball.vx);
+            break;
+        }
+        balls.current.push(ball);
+      }, 10000);
+
+      return () => {
+        clearInterval(gameLoop);
+        clearInterval(addBallInterval);
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+        window.removeEventListener("resize", resizeGame);
+      };
+    }
+  }, [gameOver, canvasWidth, canvasHeight]);
+
+  const handleShieldPurchase = async () => {
     try {
-      if (!sessionPDA) {
-        alert("Session is not initialized yet.");
-        return;
-      }
-      await savePoints(sessionPDA, Math.floor(cbEarned / 60));
-      checkBalance(sessionPDA, "checkBalance continue");
-      alert("Points saved on-chain.");
+      const txId = await purchaseShield(sessionPDA, configPDA);
+      if (!txId) throw new Error("Transaction failed or was not confirmed.");
+      await createTransaction("Shield purchased", 100);
+      setShieldActive(true);
+      shieldActiveRef.current = true;
+      setShieldCountdown(15);
+      toast.success("Shield purchased! You are invincible for 15 seconds.");
     } catch (err) {
       console.error(err);
-      alert("Error saving points.");
+      toast.error(err.message || "Error purchasing shield.");
     }
+  };
+
+  const handleContinue = async () => {
+    try {
+      const txId = await continueGame(sessionPDA, configPDA);
+      if (!txId) {
+        throw new Error("Continue game transaction failed or not confirmed.");
+      }
+
+      await createTransaction("Pay to continue", 100);
+
+      setContinueInvincible(true);
+      setInvincibleCountdown(5);
+      setGameOver(false);
+      toast.success("Paid 100 CB tokens. You are invincible for 5 seconds.");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Error continuing game.");
+    }
+  };
+
+  const handleRestart = async () => {
     setCbEarned(0);
+    setLastSavedScore(0);
     setGameOver(false);
     balls.current = [{ x: 50, y: 50, vx: 3, vy: 3 }];
   };
-
-  // Purchase shield
-  const handleShieldPurchase = async () => {
-    if (!sessionPDA || !configPDA) {
-      alert("Session and config must be initialized.");
-      return;
-    }
-    try {
-      const txId = await purchaseShield(sessionPDA, configPDA);
-      alert("Shield purchased. Tx ID: " + txId);
-    } catch (err) {
-      console.error(err);
-      alert("Error purchasing shield.");
-    }
-  };
-
-  // Pay to continue
-  const handleContinue = async () => {
-    if (!sessionPDA || !configPDA) {
-      alert("Session or Config is not initialized yet.");
-      return;
-    }
-    try {
-      await continueGame(sessionPDA, configPDA);
-      alert("Paid 100 CB tokens to continue.");
-      setGameOver(false);
-    } catch (err) {
-      console.error(err);
-      alert("Error continuing game.");
-    }
-  };
-
-  // Resize and background music
-  useEffect(() => {
-    resizeGame();
-    window.addEventListener("resize", resizeGame);
-    if (backgroundSound.current && backgroundSound.current.paused) {
-      backgroundSound.current.play().catch((err) => {
-        console.error("Error playing background music:", err);
-      });
-    }
-    if (!gameOver && canvasRef.current) {
-      startGame();
-    }
-
-    return () => {
-      window.removeEventListener("resize", resizeGame);
-    };
-  }, [gameOver, canvasWidth, canvasHeight]);
 
   return (
     <div style={{ backgroundImage: `url(${backgroundImage.current.src})` }}>
@@ -336,14 +379,6 @@ function BearDodgeGame() {
                 Pay 100CB to Continue
               </button>
             </div>
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={handleShieldPurchase}
-                className="py-1 bg-green-600 text-white rounded"
-              >
-                Purchase Shield
-              </button>
-            </div>
           </div>
         </div>
       ) : (
@@ -359,13 +394,23 @@ function BearDodgeGame() {
           <p className="text-3xl font-semibold">
             CB earned: {Math.floor(cbEarned / 60)}
           </p>
+          {shieldActive && (
+            <p className="text-lg text-green-400">
+              Shield active: {shieldCountdown}s
+            </p>
+          )}
+          {continueInvincible && (
+            <p className="text-lg text-yellow-400">
+              Invincible: {invincibleCountdown}s
+            </p>
+          )}
           <div
             id="canvas-container"
             className="relative w-full max-w-4xl bg-gray-100 border rounded shadow overflow-hidden"
           >
             <canvas
               ref={canvasRef}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover game-canvas"
             ></canvas>
           </div>
         </div>

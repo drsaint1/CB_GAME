@@ -12,6 +12,9 @@ import LeaderboardPage from "./pages/LeaderBoard";
 import ReferralPage from "./pages/Referrals";
 import MobileBottomNav from "./layouts/MobileBottomNav";
 import WalletPage from "./pages/Wallet";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 // Solana Wallet Adapter imports
 import {
@@ -66,6 +69,7 @@ function App() {
     <ConnectionProvider endpoint="https://api.devnet.solana.com">
       <WalletProvider wallets={wallets} autoConnect={true}>
         <WalletModalProvider modalTitle="Connect Your Wallet">
+        <ToastContainer position="top-right" autoClose={3000} />
           <Routes>
             {/* Routes Without DefaultLayout */}
             <Route

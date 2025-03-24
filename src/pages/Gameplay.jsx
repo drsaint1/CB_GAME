@@ -1,15 +1,90 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import WalletIntegration from "../components/WalletIntegration";
 import BearDodgeGame from "../scenes/BearDodgeGame";
-import '../App.css';
+import "../App.css";
 import { Link } from "react-router-dom";
+import OldBearDodgeGame from "../scenes/OldBearDodgeGame";
+import {
+  initializeProgram,
+  useInitializeConfig,
+  useInitializeSession,
+} from "../hooks/useContracts";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { toast } from "react-toastify";
 // import FaUser
-
 
 function GamePlay() {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const [sessionPDA, setSessionPDA] = useState(null);
+  const [configPDA, setConfigPDA] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [gameConfig, setGameconfig] = useState(false);
+  const [programState, setProgramState] = useState(null);
+
+  const { wallet } = useWallet();
+
+  const program = useMemo(() => {
+    if (wallet) {
+      return initializeProgram(wallet);
+    }
+    return null;
+  }, [wallet]);
+
+  const { initializeSession } = useInitializeSession(program);
+  const { initializeConfig } = useInitializeConfig(program);
+
+  useEffect(() => {
+    if (program) {
+      setProgramState(program);
+    }
+  }, [program]);
+
+  useEffect(() => {
+    if (!sessionPDA && gameConfig) {
+      const initialize = async () => {
+        try {
+          const pda = await initializeSession();
+          if (pda) {
+            setSessionPDA(pda);
+            gameConfig(true);
+            toast.dismiss();
+            toast.success("✅ Session initialized successfully!");
+          } else {
+            throw new Error("🚨 Session PDA is undefined!");
+          }
+        } catch (err) {
+          toast.dismiss();
+          toast.error("❌ Error initializing session");
+        }
+      };
+
+      initialize();
+    }
+  }, [wallet, sessionPDA, gameConfig]);
+
+  useEffect(() => {
+    if (sessionPDA && !configPDA && gameConfig) {
+      const initialize = async () => {
+        try {
+          const config = await initializeConfig(100, 100, 100);
+          if (config) {
+            setConfigPDA(config);
+            setGameStarted(true);
+            toast.dismiss();
+            toast.success("✅ Configuration loaded!");
+          } else {
+            throw new Error("🚨 Config PDA is undefined!");
+          }
+        } catch (err) {
+          toast.dismiss();
+          toast.error("❌ Error initializing config");
+        }
+      };
+
+      initialize();
+    }
+  }, [sessionPDA, configPDA, gameConfig]);
 
   useEffect(() => {
     // Check localStorage for existing wallet data
@@ -44,57 +119,44 @@ function GamePlay() {
   };
 
   const startGame = () => {
-    setGameStarted(true);
+    // setGameStarted(true);
+    setGameconfig(true);
   };
-
-
-  const handlePurchaseShield = async () => {
-    try {
-      const tx = await program.rpc.purchaseShield({
-        accounts: {
-          playerTokenAccount: walletAddress,
-          treasuryAccount: new PublicKey("<TREASURY_ACCOUNT_PUBLIC_KEY>"),
-          playerAuthority: walletAddress,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-      });
-      console.log("Shield purchased successfully:", tx);
-      alert("Shield purchased!");
-    } catch (error) {
-      console.error("Error in Purchase Shield:", error);
-    }
-  };
-
-  // Handle "Withdraw Tokens"
-  const handleWithdrawTokens = async () => {
-    try {
-      const tx = await program.rpc.withdrawTokens(new web3.BN(cbEarned), {
-        accounts: {
-          playerTokenAccount: walletAddress,
-          vaultAccount: new PublicKey("<VAULT_ACCOUNT_PUBLIC_KEY>"),
-          playerAuthority: walletAddress,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-      });
-      console.log("Tokens withdrawn successfully:", tx);
-      alert("Tokens withdrawn!");
-      setCbEarned(0);
-    } catch (error) {
-      console.error("Error in Withdraw Tokens:", error);
-    }
-  };
-
-
 
   return (
     <>
+      {((!sessionPDA || !configPDA) && gameConfig) && (
+        <div className="loading-screen">
+          <div className="loading-content">
+            <div className="spinner"></div>
+            <p className="loading-text">
+              Please wait while we configure the game for you...
+            </p>
+          </div>
+        </div>
+      )}
       <div style={backgroundStyle} className="font-montserrat">
         {!gameStarted ? (
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "100%", color: "white", }} >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+              color: "white",
+            }}
+          >
             <h2>Welcome to Bear Dodge Game</h2>
             {isWalletConnected ? (
               <>
-                <button onClick={startGame} className="mt-5 px-5 py-2.5 text-lg bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 cursor-pointer" > Start Game </button>
+                <button
+                  onClick={startGame}
+                  className="mt-5 px-5 py-2.5 text-lg bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 cursor-pointer"
+                >
+                  {" "}
+                  Start Game{" "}
+                </button>
               </>
             ) : (
               <>
@@ -104,9 +166,7 @@ function GamePlay() {
           </div>
         ) : (
           <>
-            <BearDodgeGame
-              walletAddress={userData?.wallet_address}
-            />
+            <BearDodgeGame sessionPDA={sessionPDA} configPDA={configPDA} />
           </>
         )}
         {/* <div style={{ position: "absolute", top: "10px", right: "20px", zIndex: 1000, }} >
