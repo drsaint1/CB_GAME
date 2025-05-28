@@ -1,28 +1,45 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import nodePolyfills from 'rollup-plugin-polyfill-node';
-import process from 'process';
-import path from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
+import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills(), // Add the polyfills plugin
+    nodePolyfills({
+      // Whether to polyfill `node:` protocol imports.
+      protocolImports: true,
+    }),
   ],
   optimizeDeps: {
-    include: ['@coral-xyz/anchor'], // Explicitly include the Anchor library for optimization
+    include: ["@coral-xyz/anchor", "buffer", "process"],
   },
   define: {
-    'process.env': {},
+    global: "globalThis",
+    "process.env": {},
   },
   resolve: {
     alias: {
-      crypto: 'crypto-browserify',
-      stream: 'stream-browserify',
-      assert: 'assert',
-      buffer: 'buffer',
-      '@coral-xyz/anchor': path.resolve(__dirname, 'node_modules/@coral-xyz/anchor'),
+      crypto: "crypto-browserify",
+      stream: "stream-browserify",
+      assert: "assert",
+      buffer: "buffer",
+      process: "process/browser",
+      "@coral-xyz/anchor": path.resolve(
+        process.cwd(),
+        "node_modules/@coral-xyz/anchor"
+      ),
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {
+          buffer: "Buffer",
+        },
+      },
     },
   },
 });
